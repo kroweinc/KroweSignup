@@ -1,11 +1,9 @@
 ﻿import { createServerSupabaseClient } from '@/lib/supabaseServer'
-import { sign } from 'crypto'
 
 const PHASE = {
-  WELCOME: 'welcome',
+  AGE: 'age',
   IDEA: 'idea',
   PRODUCT_TYPE: 'product_type',
-  AGE: 'age',
   PROBLEM: 'problem',
   TARGET_CUSTOMER: 'target_customer',
   INDUSTRY: 'industry',
@@ -68,7 +66,7 @@ export async function POST(req: Request) {
         .from('signup_states')
         .insert({
           user_id: fakeUserId,
-          current_phase: 'welcome',
+          current_phase: PHASE.AGE,
           user_profile: {},
           founder_profile: {},
           idea_profile: {},
@@ -100,17 +98,17 @@ export async function POST(req: Request) {
     // 3. Decide what to do based on current_phase
     let reply: string //! if there is an error look here
 
-    if (signupState.current_phase === 'welcome') {
-      // Treat the userMessage as their name
-      const name = userMessage.trim()
+    if (signupState.current_phase === 'age') {
+      // Treat the userMessage as their age
+      const age = userMessage.trim()
 
-      // Update user_profile with name
+      // Update user_profile with age
       const newUserProfile = {
         ...(signupState.user_profile || {}),
-        name,
+        age,
       }
 
-      // Update row: set name + advance phase
+      // Update row: set age + advance phase
       const { data: updated, error: updateError } = await supabase
         .from('signup_states')
         .update({
@@ -127,7 +125,7 @@ export async function POST(req: Request) {
         return new Response('Error updating signup state', { status: 500 })
       }
 
-      const reply = `Nice to meet you, ${name}!`+
+      const reply = `Nice to meet you, ${age}!`+
       `Now, let's start with your idea.\n\n`+
        `Q1) What is your startup idea?\n` +
     `Please use this structure:\n` +
