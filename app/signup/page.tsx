@@ -4,12 +4,23 @@ import { useState } from 'react'
 import AgeStep from './Steps/AgeStep'
 import IdeaStep from './Steps/IdeaStep'
 import ProductTypeStep from './Steps/ProductTypeStep'
+import ProblemStep from './Steps/ProblemStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
+  const [problem, setProblem] = useState('')
+
+
+  async function handleProblemContinue() {
+    const data = await sendToApi(problem)
+    const next = data.signupState?.current_phase
+    console.log('Next Phase:', next)
+    if (next) setCurrentPhase(next)
+  }
+
 
   async function sendToApi(message: string) {
     const res = await fetch('/api/signup/next', {
@@ -73,6 +84,17 @@ export default function SignupPage() {
           onChange={setProductType}
           onBack={() => setCurrentPhase('idea')}
           onContinue={handleProductTypeContinue}
+        />
+      )
+    }
+
+    if (currentPhase === 'problem') {
+      return(
+        <ProblemStep
+        value={problem}
+        onChange={setProblem}
+        onBack={() => setCurrentPhase('product_type')}
+        onContinue={handleProblemContinue}
         />
       )
     }
