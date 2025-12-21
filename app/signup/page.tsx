@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import AgeStep from './Steps/AgeStep'
 import IdeaStep from './Steps/IdeaStep'
+import ProductTypeStep from './Steps/ProductTypeStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
   const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type'>('age')
   const [idea, setIdea] = useState('')
+  const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
 
   async function sendToApi(message: string) {
     const res = await fetch('/api/signup/next', {
@@ -34,6 +36,14 @@ export default function SignupPage() {
     if (next) setCurrentPhase(next)
    }
 
+   async function handleProductTypeContinue() {
+    if(!productType) return
+    const data = await sendToApi(productType) // send web app, mobile, both or none 
+    const next = data.signupState?.current_phase
+    console.log('Next Phase:', next)
+    if (next) setCurrentPhase(next)
+   }
+
    if (currentPhase === 'age'){
     return (
       <AgeStep
@@ -50,8 +60,19 @@ export default function SignupPage() {
         <IdeaStep
           value={idea}
           onChange={setIdea}
-          onBack={() => console.log('Back pressed')}
+          onBack={() => setCurrentPhase('age')}
           onContinue={handleIdeaContinue}
+        />
+      )
+    }
+
+    if (currentPhase === 'product_type') {
+      return (
+        <ProductTypeStep
+          value={productType}
+          onChange={setProductType}
+          onBack={() => setCurrentPhase('idea')}
+          onContinue={handleProductTypeContinue}
         />
       )
     }

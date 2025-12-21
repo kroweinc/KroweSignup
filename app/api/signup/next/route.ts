@@ -98,51 +98,43 @@ export async function POST(req: Request) {
     // 3. Decide what to do based on current_phase
     let reply: string //! if there is an error look here
 
-    if (signupState.current_phase === 'age') {
-      // Treat the userMessage as their age
-      const age = userMessage.trim()
+    if (signupState.current_phase === PHASE.AGE) {
+  const trimmed = userMessage.trim()
+  const ageNumber = parseInt(trimmed, 10)
 
-      // Update user_profile with age
-      const newUserProfile = {
-        ...(signupState.user_profile || {}),
-        age,
-      }
+  if (Number.isNaN(ageNumber) || ageNumber < 10 || ageNumber > 100) {
+    const reply =
+      "Please enter a realistic age as a number (example: 17 or 22)."
+    return Response.json({ reply, signupState })
+  }
 
-      // Update row: set age + advance phase
-      const { data: updated, error: updateError } = await supabase
-        .from('signup_states')
-        .update({
-          user_profile: newUserProfile,
-          current_phase: 'idea', //move to q1
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', signupState.id)
-        .select('*')
-        .single()
+  const newUserProfile = {
+    ...(signupState.user_profile || {}),
+    age: ageNumber,
+  }
 
-      if (updateError) {
-        console.error('Error updating signup state:', updateError)
-        return new Response('Error updating signup state', { status: 500 })
-      }
+  const { data: updated, error: updateError } = await supabase
+    .from('signup_states')
+    .update({
+      user_profile: newUserProfile,
+      current_phase: PHASE.IDEA, // ✅ next screen
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', signupState.id)
+    .select('*')
+    .single()
 
-      const reply = `Nice to meet you, ${age}!`+
-      `Now, let's start with your idea.\n\n`+
-       `Q1) What is your startup idea?\n` +
-    `Please use this structure:\n` +
-    `"[Startup Name] is a [short description of what it is] that [what it does] by [how it works in one simple phrase]."`
+  if (updateError) {
+    console.error(updateError)
+    return new Response('Error updating age', { status: 500 })
+  }
 
-
-      return new Response(
-        JSON.stringify({
-          reply,
-          signupState: updated,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    } 
+  // Your wizard UI already shows the next screen, but reply is fine to keep
+  return Response.json({
+    reply: 'Age saved.',
+    signupState: updated,
+  })
+} 
     else if (signupState.current_phase === 'idea') {
         //q1: store raw idea pitch
         const ideaAnswer = userMessage.trim()
@@ -189,7 +181,7 @@ export async function POST(req: Request) {
     } else if (signupState.current_phase === 'product_type') {
   const answer = userMessage.toLowerCase().trim()
 
-  let productType: 'web app' | 'mobile app' | 'both' | 'other' = 'other'
+  let productType: 'web ' | 'mobile '| 'both' | 'other' = 'other'
 
   const hasWeb = answer.includes('web')
   const hasMobile = answer.includes('mobile')
@@ -197,9 +189,9 @@ export async function POST(req: Request) {
   if (hasWeb && hasMobile) {
     productType = 'both'
   } else if (hasWeb) {
-    productType = 'web app'
+    productType = 'web '
   } else if (hasMobile) {
-    productType = 'mobile app'
+    productType = 'mobile '
   } else {
     productType = 'other'
   }
@@ -214,7 +206,7 @@ export async function POST(req: Request) {
     .from('signup_states')
     .update({
       idea_profile: newIdeaProfile,
-      current_phase: 'age', // go to Q3
+      current_phase: PHASE.PROBLEM, // go to Q3
       updated_at: new Date().toISOString(),
     })
     .eq('id', signupState.id)
@@ -240,64 +232,8 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'application/json' },
     }
   )
-} //Start of age question
- else if (signupState.current_phase === 'age') {
-        const trimmed = userMessage.trim()
-        const ageNumber = parseInt(trimmed, 10)
-
-        // Basic validation must be a number between 10 and 100 
-        if (Number.isNaN(ageNumber) || ageNumber < 10 || ageNumber > 100) {
-           const  reply = "Hmm, that doesn't seem like a valid age. Please answer with a number between 10 and 100."
-
-            return new Response(
-            JSON.stringify({
-              reply,
-              signupState,
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
-        }
-
-        const newUserProfile = {
-            ...(signupState.user_profile || {}),
-            age: ageNumber,
-        }
-
-        const { data: updated, error: updateError } = await supabase
-        .from('signup_states')
-        .update({
-            user_profile: newUserProfile,
-            current_phase: PHASE.PROBLEM, //move to finished
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', signupState.id)
-        .select('*')
-        .single()
-
-        if (updateError) {
-        console.error('Error updating signup state:', updateError)
-        return new Response('Error updating signup state', { status: 500 })
-        }
-
-        const reply = 
-        "Thanks.\n\n" +
-    "Q4) What is the problem your startup solves? Please describe the problem your target customer experiences, not just your features."
-
-        return new Response(
-        JSON.stringify({
-          reply,
-          signupState: updated,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-      // Start of quetsion 4
-    } else if (signupState.current_phase === PHASE.PROBLEM) {
+} //Start of problem question
+ else if (signupState.current_phase === PHASE.PROBLEM) {
         const problem = userMessage.trim()
 
         //tiny validation: must be a little detailed 
