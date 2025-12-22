@@ -416,77 +416,47 @@ export async function POST(req: Request) {
 
     //Start of determing skills aka Q8
   } else if (signupState.current_phase === PHASE.SKILLS_START) {
-    const raw = userMessage.trim()
-    const upper = raw.toUpperCase()
+  // TEMP BYPASS: don't ask skill detail followups yet. Go straight to Team Size.
 
-    const picked = {
-      dev: upper.includes('A'),
-      mkt: upper.includes('B'),
-      lead: upper.includes('C'),
-      other: upper.includes('D'),
-    }
+  const raw = userMessage.trim()
 
-    //If they typed a free response instead of letters, treat it as "other"
-    const pickedAny = picked.dev || picked.mkt || picked.lead || picked.other
+  // Your UI sends: "dev,marketing" OR "none"
+  const selected = raw
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
 
-    //Build a queue in a fixed oreder
-    const queue: Array<'dev' | 'mkt' | 'lead' | 'other'> = []
-    if (picked.dev) queue.push('dev')
-    if (picked.mkt) queue.push('mkt')
-    if (picked.lead) queue.push('lead')
-    if (picked.other || !pickedAny) queue.push('other') //if none picked, force other
+  const normalized = Array.from(new Set(selected))
 
-    //Decide next phase; dev first, then mkt, then lead, then else other 
-    type PhaseValue = (typeof PHASE)[keyof typeof PHASE]
+  const newFounderProfile = {
+    ...(signupState.founder_profile || {}),
+    skills_selected: normalized,     // store something useful for later
+    skills_selected_raw: raw,        // store raw too
+    // skills_queue: undefined,       // optional: you can remove this later
+  }
 
-    const first = queue[0]
-    const nextPhase = 
-    first === 'dev'
-    ? PHASE.SKILLS_DEV
-    : first === 'mkt'
-    ? PHASE.SKILLS_MKT
-    : first === 'lead'
-    ? PHASE.SKILLS_LEAD
-    : PHASE.SKILLS_OTHER
+  const { data: updated, error: updateError } = await supabase
+    .from('signup_states')
+    .update({
+      founder_profile: newFounderProfile,
+      current_phase: PHASE.TEAM_SIZE, // ✅ jump straight to Team
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', signupState.id)
+    .select('*')
+    .single()
 
-    const newFounderProfile = {
-      ...(signupState.founder_profile || {}),
-      skills_queue: queue,
-      skills_details: (signupState.founder_profile?.skills_details) ?? {},
-      skills_freeform_if_any: pickedAny ? null : raw, //store freeform only if they didnt pick any
-    }
-    
-    const { data: updated, error: updateError } = await supabase
-      .from('signup_states')
-      .update({
-        founder_profile: newFounderProfile,
-        current_phase: nextPhase,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', signupState.id)
-      .select('*')
-      .single()
+  if (updateError) {
+    console.error(updateError)
+    return new Response('Error updating skills', { status: 500 })
+  }
 
-      if (updateError){
-        console.error(updateError)
-        return new Response ('Error updating skills', { status: 500} )
-      }
+  const reply =
+    "Thanks.\n\n" +
+    "Q9) How many people are on your founding team (including you)? Please answer with a number."
 
-      const reply = 
-      nextPhase === PHASE.SKILLS_DEV
-      ? 'Dev skills: What languages/tools do you know, and do you have any project links?'
-     : nextPhase === PHASE.SKILLS_MKT
-    ? 'Marketing skills: What channels/tools have you used, and any results/links?'
-     : nextPhase === PHASE.SKILLS_LEAD
-    ? 'Leadership skills: What roles have you had, team size, and what did you ship/achieve?'
-    : 'Tell me what you’re good at with specific examples (projects, jobs, tools).'
-
-    return Response.json(
-      { reply, signupState: updated },
-      {status: 200, }
-   )
-    //dev skills still q8
-  } else if (signupState.current_phase === PHASE.SKILLS_DEV ){
+  return Response.json({ reply, signupState: updated })
+} else if (signupState.current_phase === PHASE.SKILLS_DEV ){
       const answer = userMessage.trim()
 
       const fp = signupState.founder_profile || {}

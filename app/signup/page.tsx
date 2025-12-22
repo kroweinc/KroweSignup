@@ -9,10 +9,11 @@ import TargetCustomerStep from './Steps/TargetCustomerStep'
 import IndustryStep from './Steps/IndustryStep'
 import IndustryExperienceStep from './Steps/IndustryExperienceStep'
 import SkillsStep from './Steps/SkillsStep'
+import TeamSizeStep from './Steps/TeamSizeStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience' | 'skills_start'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
   const [problem, setProblem] = useState('')
@@ -21,6 +22,14 @@ export default function SignupPage() {
   const [industryOther, setIndustryOther] = useState('')
   const [industryExperience, setIndustryExperience] = useState('')
   const [skills, setSkills] = useState<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>([])
+  const [teamSize, setTeamSize] = useState (1)
+
+  async function handleTeamSizeContinue (){
+    const data = await sendToApi(String(teamSize))
+    const next = data.signupState?.current_phase
+    console.log('Next Phase: ', next)
+    if (next) setCurrentPhase(next)
+  }
 
 
   async function handleSkillsContinue () {
@@ -190,6 +199,18 @@ export default function SignupPage() {
           onBack={() => setCurrentPhase('industry_experience')}
           onContinue={handleSkillsContinue}
           progressPercent={78}
+        />
+      )
+    }
+
+    if (currentPhase === 'team_size'){
+      return (
+        <TeamSizeStep
+        value = {teamSize}
+        onChange = {setTeamSize}
+        onBack = {() => setCurrentPhase('skills_start')}
+        onContinue={handleTeamSizeContinue}
+        progressPercent = {86}
         />
       )
     }
