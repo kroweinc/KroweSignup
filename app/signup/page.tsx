@@ -10,10 +10,12 @@ import IndustryStep from './Steps/IndustryStep'
 import IndustryExperienceStep from './Steps/IndustryExperienceStep'
 import SkillsStep from './Steps/SkillsStep'
 import TeamSizeStep from './Steps/TeamSizeStep'
+import HoursCommitmentStep from './Steps/HoursStep'
 
 export default function SignupPage() {
   const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience' | 'skills_start'>('age')
+  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience' | 'skills_start'
+  | 'team_size'>('age')
   const [idea, setIdea] = useState('')
   const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
   const [problem, setProblem] = useState('')
@@ -23,6 +25,15 @@ export default function SignupPage() {
   const [industryExperience, setIndustryExperience] = useState('')
   const [skills, setSkills] = useState<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>([])
   const [teamSize, setTeamSize] = useState (1)
+  const [hours, setHours] = useState(6)
+
+
+  async function handleHoursContinue (){
+    const data = await sendToApi (String(hours))
+    const next = data.signupState?.current_phase
+    console.log('Next phase:', next)
+    if (next) setCurrentPhase(next)
+  }
 
   async function handleTeamSizeContinue (){
     const data = await sendToApi(String(teamSize))
@@ -211,6 +222,18 @@ export default function SignupPage() {
         onBack = {() => setCurrentPhase('skills_start')}
         onContinue={handleTeamSizeContinue}
         progressPercent = {86}
+        />
+      )
+    }
+
+    if (currentPhase === 'hours_commitment'){
+      return(
+        <HoursCommitmentStep
+        value = {hours}
+        onChange = {setHours}
+        onBack = {() => setCurrentPhase('team_size')}
+        onContinue={handleHoursContinue}
+        progressPercent={100}
         />
       )
     }
