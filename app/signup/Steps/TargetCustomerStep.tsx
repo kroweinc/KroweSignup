@@ -1,48 +1,41 @@
 'use client'
 
 type TargetCustomerStepProps = {
-    value: string;
-    onChange: (v: string) => void;
-    onBack?: () => void;
-    onContinue: () => void;
-    progressPercent?: number // works for progress bar on the main page
+  value: string;
+  onChange: (v: string) => void;
+  onBack?: () => void;
+  onContinue: () => void;
+  progressPercent?: number // works for progress bar on the main page
 }
 
 export default function TargetCustomerStep({
-    value,
-    onChange,
-    onBack,
-    onContinue,
-    progressPercent = 55, //tweak if need to change the look of the progress
+  value,
+  onChange,
+  onBack,
+  onContinue,
+  progressPercent = 55, //tweak if need to change the look of the progress
 }: TargetCustomerStepProps) {
-    return(
-         <div className="min-h-screen bg-gray-50 px-6 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-center gap-2 mb-12">
-          <div className="text-3xl font-bold tracking-wide text-orange-600">
-            KROWE
-          </div>
-          <div className="w-12 h-12 bg-gray-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl" />
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex justify-center pt-6">
+        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
+      </div>
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
+        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
+          <div
+            className="bg-orange-500 h-full rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
+    
+    <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-4">
+            <div className="text-4xl">🧍‍♂️</div>
 
-        <div className="max-w-5xl mx-auto mb-16">
-          <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="absolute left-0 top-0 h-full bg-orange-600 rounded-full"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="max-w-3xl mx-auto">
-          <div className="flex flex-col items-center">
-            <div className="text-4xl mb-8">🧍‍♂️</div>
-
-            <h1 className="text-4xl font-semibold text-gray-900 mb-6 text-center">
+          <h1 className="text-4xl font-semibold text-gray-900">
               who is your target customer?
             </h1>
 
-            <p className="text-gray-400 text-center mb-8 max-w-2xl leading-relaxed">
+          <p className="text-gray-500 max-w-3xl">
               Use this template: Our target customer is a [age range] [type of
               person], currently [specific situation], who cares about [their
               priority], and is looking for [specific outcome]
@@ -76,6 +69,5 @@ export default function TargetCustomerStep({
           </div>
         </div>
       </div>
-    </div>
-    )
+  )
 }

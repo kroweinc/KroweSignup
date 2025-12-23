@@ -3,35 +3,31 @@
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
 
 type ProductTypeStepProps = {
-    value: ProductType | null;
-    onChange: (v: ProductType) => void;
-    onBack?: () => void;
-    onContinue: () => void;
-    progressPercent?: number //optional if I want to add a progress bar
+  value: ProductType | null;
+  onChange: (v: ProductType) => void;
+  onBack?: () => void;
+  onContinue: () => void;
+  progressPercent?: number //optional if I want to add a progress bar
 }
 
-export default function ProductTypeStep ({
-    value,
-    onChange,
-    onBack,
-    onContinue,
-    progressPercent = 33,
+export default function ProductTypeStep({
+  value,
+  onChange,
+  onBack,
+  onContinue,
+  progressPercent = 33,
 }: ProductTypeStepProps) {
-    return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center px-6 py-12">
-      <div className="w-full max-w-6xl">
-        <div className="flex items-center justify-center gap-3 mb-12">
-          <h1 className="text-3xl font-bold text-[#F97316] tracking-wide">KROWE</h1>
-          <div className="w-10 h-10 bg-gray-800 rounded-lg" />
-        </div>
-
-        <div className="mb-20">
-          <div className="relative w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="absolute left-0 top-0 h-full bg-[#F97316] rounded-full"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex justify-center pt-6">
+        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
+      </div>
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
+        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
+          <div
+            className="bg-orange-500 h-full rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
 
         <div className="text-center mb-16">
@@ -44,9 +40,8 @@ export default function ProductTypeStep ({
           <button
             type="button"
             onClick={() => onChange('mobile')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${
-              value === 'mobile' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-            }`}
+            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'mobile' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
+              }`}
           >
             <div className="text-7xl">📱</div>
             <span className="text-lg text-gray-900">mobile app</span>
@@ -55,9 +50,8 @@ export default function ProductTypeStep ({
           <button
             type="button"
             onClick={() => onChange('web')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${
-              value === 'web' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-            }`}
+            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'web' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
+              }`}
           >
             <div className="text-7xl">💻</div>
             <span className="text-lg text-gray-900">web app</span>
@@ -66,9 +60,8 @@ export default function ProductTypeStep ({
           <button
             type="button"
             onClick={() => onChange('both')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${
-              value === 'both' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-            }`}
+            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'both' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
+              }`}
           >
             <div className="text-5xl flex items-center gap-1">
               <span>📱</span>
@@ -81,9 +74,8 @@ export default function ProductTypeStep ({
           <button
             type="button"
             onClick={() => onChange('other')}
-            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${
-              value === 'other' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
-            }`}
+            className={`w-44 h-52 bg-white border rounded-2xl flex flex-col items-center justify-center gap-6 transition-all duration-200 hover:bg-[#F97316]/10 hover:border-[#F97316]/50 ${value === 'other' ? 'bg-[#F97316]/10 border-[#F97316]' : 'border-gray-200'
+              }`}
           >
             <div className="flex gap-3 text-4xl">
               <span className="w-3 h-3 bg-gray-900 rounded-full" />

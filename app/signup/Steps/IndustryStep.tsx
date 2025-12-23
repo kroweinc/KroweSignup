@@ -1,118 +1,223 @@
 'use client'
 
-import { Briefcase, ChevronLeft } from "lucide-react"
-import React from 'react'
+import type { ReactNode } from 'react'
+import {
+  GraduationCap,
+  Wallet,
+  Heart,
+  ShoppingCart,
+  Layers,
+  Store,
+  Palette,
+  MoreHorizontal,
+  Factory,
+  ChevronLeft,
+} from 'lucide-react'
+
+export type IndustryId =
+  | 'edtech'
+  | 'fintech'
+  | 'health'
+  | 'ecommerce'
+  | 'saas'
+  | 'marketplace'
+  | 'creator'
+  | 'other'
 
 type IndustryStepProps = {
-    value: string | null
-    otherValue: string
-    onChange:(v: string) => void
-    onOtherChange: (v: string) => void
-    onBack?: () => void
-    onContinue: () => void 
+  value: IndustryId | null
+  otherValue: string
+  onChange: (v: IndustryId) => void
+  onOtherChange: (v: string) => void
+  onBack?: () => void
+  onContinue: () => void
+  progressPercent?: number
 }
 
-const OPTIONS = [
-    'EdTech',
-    'FinTech',
-    'Health / Wellness',
-    'E-commerce',
-    'SaaS / Productivity',
-    'Marketplace',
-    'Creator Tools',
-    'Other',
-] as const
-
-function OptionButton({
-    label,
-    selected,
-    onClick,
-}: {
-    label: string
-    selected: boolean
-    onClick: () => void
-}) {
-    return(
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'w-full text-left border rounded-xl px-4 py-4 transition-colors',
-        selected ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white hover:bg-gray-50',
-      ].join(' ')}
-    >
-      <div className="font-medium text-gray-900">{label}</div>
-      <div className="text-sm text-gray-500">Select this industry</div>
-    </button>
-  )
+interface Industry {
+  id: IndustryId
+  name: string
+  description: string
+  icon: ReactNode
 }
 
-export default function IndustryStep ({
-    value,
-    otherValue,
-    onChange,
-    onOtherChange,
-    onBack,
-    onContinue,
+export default function IndustryStep({
+  value,
+  otherValue,
+  onChange,
+  onOtherChange,
+  onBack,
+  onContinue,
+  progressPercent = 0,
 }: IndustryStepProps) {
-    const canContinue =
-    !!value && (value !== 'Other' || otherValue.trim().length >=3)
+  const industries: Industry[] = [
+    {
+      id: 'edtech',
+      name: 'EdTech',
+      description:
+        'Educational technology platforms, online learning, and knowledge-sharing tools',
+      icon: <GraduationCap className="w-6 h-6" />,
+    },
+    {
+      id: 'fintech',
+      name: 'FinTech',
+      description:
+        'Tech-powered financial services like payments, banking, lending, and investing',
+      icon: <Wallet className="w-6 h-6" />,
+    },
+    {
+      id: 'health',
+      name: 'Health / Wellness',
+      description:
+        'Healthcare technology, fitness apps, mental health, and wellness platforms',
+      icon: <Heart className="w-6 h-6" />,
+    },
+    {
+      id: 'ecommerce',
+      name: 'E-commerce',
+      description:
+        'Online retail, direct-to-consumer brands, and digital shopping experiences',
+      icon: <ShoppingCart className="w-6 h-6" />,
+    },
+    {
+      id: 'saas',
+      name: 'SaaS / Productivity',
+      description:
+        'Software-as-a-service tools, workflow automation, and productivity solutions',
+      icon: <Layers className="w-6 h-6" />,
+    },
+    {
+      id: 'marketplace',
+      name: 'Marketplace',
+      description:
+        'Platforms connecting buyers and sellers, two-sided marketplaces, and peer-to-peer services',
+      icon: <Store className="w-6 h-6" />,
+    },
+    {
+      id: 'creator',
+      name: 'Creator Tools',
+      description:
+        'Tools and platforms for content creators, influencers, and digital artists',
+      icon: <Palette className="w-6 h-6" />,
+    },
+    {
+      id: 'other',
+      name: 'Other',
+      description: 'If none of these fit your idea, select this and type your industry',
+      icon: <MoreHorizontal className="w-6 h-6" />,
+    },
+  ]
 
-     return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="w-full max-w-md mx-auto flex-1 flex flex-col items-center justify-center px-6">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-8">
-          <Briefcase className="w-7 h-7 text-gray-600" strokeWidth={1.5} />
+  const canContinue = !!value && (value !== 'other' || otherValue.trim().length >= 3)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      <div className="flex justify-center pt-4">
+        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-16 w-auto" />
+      </div>
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-3 px-4">
+        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
+          <div
+            className="bg-orange-500 h-full rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
 
-        <h1 className="text-3xl font-semibold text-gray-800 mb-2">
-          What industry does this fall under?
-        </h1>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center mb-2">
+            <Factory className="w-12 h-12 text-orange-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            what industry does your idea fall under
+          </h1>
+          <p className="text-sm text-gray-500 max-w-3xl mx-auto">
+            based on the answers you gave prior we picked some that we thought were the best fit
+          </p>
+        </div>
 
-        <p className="text-gray-400 text-sm mb-10 text-center">
-          Pick the closest match. If none fit, choose “Other”.
-        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {industries.map((industry) => (
+            <button
+              key={industry.id}
+              type="button"
+              onClick={() => onChange(industry.id)}
+              className={[
+                'relative p-3 rounded-xl border-2 transition-all duration-200 text-left',
+                value === industry.id
+                  ? 'border-orange-500 bg-orange-50 shadow-lg scale-105'
+                  : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow-md hover:scale-[1.02]',
+              ].join(' ')}
+            >
+              <div
+                className={[
+                  'mb-2 inline-flex',
+                  value === industry.id ? 'text-orange-500' : 'text-orange-400',
+                ].join(' ')}
+              >
+                {industry.icon}
+              </div>
 
-        <div className="w-full grid grid-cols-1 gap-3">
-          {OPTIONS.map((opt) => (
-            <OptionButton
-              key={opt}
-              label={opt}
-              selected={value === opt}
-              onClick={() => onChange(opt)}
-            />
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
+                {industry.name}
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                {industry.description}
+              </p>
+
+              {value === industry.id && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+            </button>
           ))}
         </div>
 
-        {value === 'Other' && (
-          <div className="w-full mt-4">
-            <label className="text-xs text-gray-400">
-              Type your industry (example: “Real Estate”, “HR”, “LegalTech”)
+        {/* Show text input only if "other" is selected */}
+        {value === 'other' && (
+          <div className="max-w-2xl mx-auto mb-6">
+            <label className="block text-sm text-gray-600 mb-2">
+              Type your industry
             </label>
             <input
               value={otherValue}
               onChange={(e) => onOtherChange(e.target.value)}
-              placeholder="Your industry..."
-              className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+              placeholder="Example: Real Estate, LegalTech, HR, Robotics..."
+              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
             />
           </div>
         )}
 
-        <div className="flex gap-4 mt-10 w-full">
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-6 py-3 text-gray-700 font-medium hover:text-gray-900 transition-colors flex items-center gap-2"
           >
             <ChevronLeft className="w-4 h-4" />
-            Go back
+            <span>Go Back</span>
           </button>
 
           <button
             type="button"
             onClick={onContinue}
             disabled={!canContinue}
-            className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50"
+            className={[
+              'px-8 py-3 rounded-lg font-semibold transition-all duration-200',
+              canContinue
+                ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg hover:shadow-xl'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed',
+            ].join(' ')}
           >
             Continue
           </button>

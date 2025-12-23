@@ -1,46 +1,43 @@
 'use client'
 
 type IdeaStepProps = {
-    value: string;
-    onChange: (v: string) => void;
-    onBack?: () => void;
-    onContinue?: () => void;
-    progress?: number; // optional (0-1)
+  value: string;
+  onChange: (v: string) => void;
+  onBack?: () => void;
+  onContinue?: () => void;
+  progressPercent?: number; // optional (0-1)
 }
 
 export default function IdeaStep({
-    value,
-    onChange,
-    onBack,
-    onContinue,
-    progress = 0.22, // example 2/10 steps
+  value,
+  onChange,
+  onBack,
+  onContinue,
+  progressPercent = 22, // example 2/10 steps
 }: IdeaStepProps) {
-    const canContinue = value.trim().length > 20;
+  const canContinue = value.trim().length > 20;
 
-    return (
-         <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4">
-      <div className="w-full max-w-4xl">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <span className="text-3xl font-bold text-orange-500">KROWE</span>
-          <div className="w-10 h-10 bg-gray-800 rounded-full" />
-        </div>
-
-        {/* Progress bar */}
-        <div className="relative w-full h-1.5 bg-gray-200 rounded-full mb-24">
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex justify-center pt-6">
+        <img src="/KroweLogo.png" alt="Krowe Logo" className="h-20 w-auto" />
+      </div>
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-5 px-4">
+        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-28">
           <div
-            className="absolute top-0 left-0 h-full bg-orange-500 rounded-full"
-            style={{ width: `${Math.round(progress * 100)}%` }}
+            className="bg-orange-500 h-full rounded-full"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="flex flex-col items-center max-w-3xl mx-auto">
-          <div className="text-4xl mb-6">💼</div>
+        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 mt-4">
+          <div className="text-4xl mb-1">💼</div>
 
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 text-center">
+          <h1 className="text-4xl font-semibold text-gray-900">
             What's your startup idea?
           </h1>
 
-          <p className="text-gray-400 text-center mb-8 text-sm">
+          <p className="text-gray-500 max-w-3xl">
             Use this template: [Startup Name] is a [short description of what it is] that [what it does]
             by [how it works in one simple phrase]
           </p>
@@ -79,5 +76,5 @@ export default function IdeaStep({
         </div>
       </div>
     </div>
-    )
+  )
 }
