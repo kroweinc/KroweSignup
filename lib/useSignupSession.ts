@@ -118,10 +118,11 @@ export function useSignupSession(){
         };
     };
 
+
     const confirmAnswer = async (
         stepKey: StepKey,
         finalAnswer: string,
-        finalSource: "orginal" | "ai_suggested" | "user_edited"
+        finalSource: "original" | "ai_suggested" | "user_edited" | "override"
     ) => { 
         if (!state.sessionId) throw new Error("No session");
 

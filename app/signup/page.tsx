@@ -12,11 +12,15 @@ import IndustryExperienceStep from './Steps/IndustryExperienceStep'
 import SkillsStep from './Steps/SkillsStep'
 import TeamSizeStep from './Steps/TeamSizeStep'
 import HoursCommitmentStep from './Steps/HoursStep'
+import { useRouter } from "next/navigation"
 
 import { useSignupSession } from '@/lib/useSignupSession'
 import {StepKey, getProgressPercent, getPrevStepKey} from '@/lib/signupSteps'
+import next from "next"
 
 type ProductType = 'mobile' | 'web' | 'both' | 'other' | null
+ const STORAGE_KEY = "krowe_signup_session_id"
+
 
 function safeJson<T = any>(s: string): T | null {
   try{
@@ -29,12 +33,14 @@ function safeJson<T = any>(s: string): T | null {
 
 
 export default function SignupPage() {
-  const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer } = useSignupSession();
+  const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
   const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
   const [canContinueAnyway, setCanContinueAnyway] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiReason, setAiReason] = useState<string | null>(null);
+  const router = useRouter();
+  const [finishing, setFinishing] = useState(false)
 
 //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
 const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
@@ -54,6 +60,48 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
     setAnswerLocal(step, serialized)
   }
 
+  async function finalizeSignup(sessionId: string){
+    setFinishing(true);
+    try{
+      const res = await fetch("/api/signup/complete" , {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ sessionId}),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if(!res.ok){
+        throw new Error(json?.error || "failed to compete signup");
+      }
+
+      //this Clear resume token so /signup doesnt reopen a completed session
+      localStorage.removeItem(STORAGE_KEY);
+
+      //Redirect after the signup 
+      router.replace("/signup/complete"); //when final platform put dashboard here
+    } finally {
+      setFinishing(false);
+    }
+  }
+
+async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSource: "original" | "ai_suggested" | "user_edited" | "override") {
+  const result = await confirmAnswer(step, finalAnswer, finalSource);
+
+  // confirmAnswer MUST return { ok: true, nextStepKey: StepKey | null }
+  const nextStepKey = result?.nextStepKey ?? null;
+
+  if (!nextStepKey) {
+    const sid = sessionId || localStorage.getItem(STORAGE_KEY);
+    if (!sid) throw new Error("Missing sessionId at finalize");
+    await finalizeSignup(sid);
+  }
+
+  return result;
+}
+
+ 
+
   async function saveAndNext(step: StepKey, v:unknown, force = false){
     if (saving) return;
     setSaving(true);
@@ -61,7 +109,7 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
     try {
       const serialized = typeof v === "string" ? v: JSON.stringify(v);
       //1) save + validate (+maybe ai suggestion) but dont advance
-      const res = await submitAnswer(step, serialized, false);
+      const res = await submitAnswer(step, serialized, force);
 
       //always update UI state from resposne
 
@@ -73,13 +121,11 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
         //2) if ok -> auto confirm (one click and advance)
         if(res.validationStatus === "ok"){
-          await confirmAnswer(step, serialized, "orginal");
+          await confirmAndMaybeFinish(step, serialized, "original");
           clearFixUI();
           setOverrideStepKey(null);
         }
 
-        //3 if needs fix -> stop here, user must chose a confirm action
-        //(use suggestion/ save edit /keept orgin anayawy)
 
 
       //ok -> clear issues and clear back overide
@@ -99,7 +145,7 @@ const continueAnyway = async () => {
   setSaving(true);
   try {
     //confirm the users current value and advance
-    await confirmAnswer(stepKey, value, "orginal")
+    await confirmAndMaybeFinish(stepKey, value, "original")
     clearFixUI();
     setOverrideStepKey(null);
   }finally {
@@ -140,12 +186,12 @@ function renderWithIssues(ui: React.ReactNode) {
               <div className="mt-3 flex flex-wrap gap-2">
                 {/* CONFIRM AI suggestion and advance */}
                 <button
-                  disabled={saving}
+                  disabled={saving || finishing}
                   className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm"
                   onClick={async () => {
                     setSaving(true);
                     try {
-                      await confirmAnswer(stepKey, aiSuggestion, "ai_suggested");
+                      await confirmAndMaybeFinish(stepKey, aiSuggestion, "ai_suggested");
                       clearFixUI();
                       setOverrideStepKey(null);
                     } finally {
@@ -158,7 +204,7 @@ function renderWithIssues(ui: React.ReactNode) {
 
                 {/* Load suggestion into input so user can edit */}
                 <button
-                  disabled={saving}
+                  disabled={saving || finishing}
                   className="px-3 py-2 rounded-lg border text-sm text-black"
                   onClick={() => setLocal(stepKey, aiSuggestion)}
                 >
@@ -167,12 +213,12 @@ function renderWithIssues(ui: React.ReactNode) {
 
                 {/* CONFIRM user's edited value and advance */}
                 <button
-                  disabled={saving}
+                  disabled={saving || finishing}
                   className="px-3 py-2 rounded-lg border text-sm text-black"
                   onClick={async () => {
                     setSaving(true);
                     try {
-                      await confirmAnswer(stepKey, value, "user_edited");
+                      await confirmAndMaybeFinish(stepKey, value, "user_edited");
                       clearFixUI();
                       setOverrideStepKey(null);
                     } finally {

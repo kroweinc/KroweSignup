@@ -6,7 +6,7 @@ type Body = {
     sessionId: string;
     stepKey: string;
     finalAnswer: string;
-    finalSource: "orginal" | "ai_suggested" | "user_edited";
+    finalSource: "original" | "ai_suggested" | "user_edited" | "override";
 };
 
 export async function POST(req: Request) {
