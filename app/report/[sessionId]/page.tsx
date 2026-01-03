@@ -38,9 +38,10 @@ export default async function ReportPage({
         <div className="text-2xl font-semibold text-black">Krowe Report (Skeleton)</div>
         <div className="mt-2 text-sm text-gray-600">Session: {sessionId}</div>
 
-        <pre className="mt-6 text-xs bg-gray-50 border rounded-xl p-4 overflow-auto text-black">
-          {JSON.stringify(data.report, null, 2)}
+      <pre className="mt-6 whitespace-pre-wrap text-sm bg-gray-50 border rounded-xl p-4 overflow-auto text-black">
+        {data.report.markdown}
         </pre>
+
       </div>
     </div>
   );

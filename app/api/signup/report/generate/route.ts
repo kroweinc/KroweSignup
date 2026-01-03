@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { buildReportFromPayload } from "@/lib/report/buildReport";
 
 type Body = { sessionId: string };
 
@@ -15,9 +16,15 @@ export async function POST(req: Request) {
   // 1) If report already exists, return it (idempotent)
   const { data: existing, error: exErr } = await supabase
     .from("signup_reports")
-    .select("id, status")
+    .select("id, report")
     .eq("session_id", sessionId)
     .maybeSingle();
+
+    const existiingVersion = existing?.report?.version;
+
+    if(existing?.id && existiingVersion === "6.2.2") {
+      return NextResponse.json({ ok: true, reportId: existing.id, sessionId});
+    }
 
   if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
   if (existing?.id) {
@@ -34,20 +41,7 @@ export async function POST(req: Request) {
   if (legErr) return NextResponse.json({ error: legErr.message }, { status: 500 });
 
   // 3) Skeleton report (Slice 6.1)
-  const report = {
-    version: "6.1-skeleton",
-    generatedAt: new Date().toISOString(),
-    inputsSnapshot: legacy?.payload ?? {},
-    sections: {
-      timeToMvp: { status: "todo" },
-      founderFit: { status: "todo" },
-      startupAdvantage: { status: "todo" },
-      thingsNeeded: { status: "todo" },
-      marketSnapshot: { status: "todo" },
-      roadmap: { status: "todo" },
-      pivot: { status: "todo" },
-    },
-  };
+  const report = buildReportFromPayload(legacy?.payload ?? {});
 
   // 4) Store the report (✅ correct table + column names)
 
