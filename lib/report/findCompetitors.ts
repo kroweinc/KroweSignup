@@ -38,7 +38,7 @@ export async function findCompetitorsViaWeb(params: {
     `;
 
     const resp = await client.responses.create({
-        model: "gpt-5",
+        model: "gpt-5-mini",
         tools: [{ type: "web_search" }], //enables web search tool
         input: prompt,
         include: ["web_search_call.action.sources"]         //for full sources list

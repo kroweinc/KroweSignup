@@ -1,6 +1,7 @@
 import { join } from "path/win32";
 import { StepKey } from "../signupSteps";
 import type { Competitor } from "./findCompetitors";
+import type { MvpCostEstimate } from "./estimateMvpCost";
 
 type Payload = Record<string, { final?: string } | any>;
 
@@ -9,7 +10,10 @@ export type ReportData = {
   flags: string[];
   timeToMvp: any;
   competitors?: Competitor[];
+  costEstimate?: MvpCostEstimate | null;
   competitorError?: string;
+  mvpCostEstimate?: MvpCostEstimate | null;
+  mvpCostEstimateError?: string;
   competitorDebug?: {
     got?: number;
     error?: string;
@@ -19,7 +23,6 @@ export type ReportData = {
     rawText?: string;
   }
 };
-
 function getFinal(payload: any, key: StepKey): string | null {
   const v = payload?.[key]?.final;
   if (typeof v === "string" && v.trim()) return v.trim()
@@ -367,7 +370,8 @@ export function competitorScaffold(industry: string | null): { name: string; lin
   return [];
 }
 
-export function buildReportFromPayload(payload: any, opts?: { competitors?: Competitor[]; competitorError?: string }) {
+
+export function buildReportFromPayload(payload: any, opts?: { competitors?: Competitor[]; competitorError?: string; costEstimate?: MvpCostEstimate | null; mvpCostEstimateError?: string }) {
   const age = safeNumber(getFinal(payload, "age"));
   const hours = safeNumber(getFinal(payload, "hours"));
   const teamSize = safeNumber(getFinal(payload, "team_size"));
@@ -384,8 +388,17 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
   const skills = skillScores(skillsRaw);
   const ageS = ageScore(age).score;
   const costS = costAligmentScore(); //miussing for now
+  const costEffS = costEfficiencyScore();
+  const ptS = productTypeScore(productType);
   const ind = industryFamiliarityScore(industry);
   const ffs = founderFitScore({ skill: skills.overall, age: ageS, costAligment: costS.score ?? null, industryFamiliarity: ind.score ?? null });
+  const sas = startupAdvantageScore({
+    skill: skills.overall ?? null,
+    age: ageS ?? null,
+    costEff: costEffS.score ?? null,
+    productType: ptS.score ?? null,
+    industry: ind.score ?? null
+  });
 
   const flags: string[] = [];
   if (hours != null && hours >= 26) flags.push("Weekly commitment is likely unsustainable (burnour risk is high")
@@ -395,6 +408,8 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
   const time = estimateTimeToMvp({ productType, skillScore, hours, teamSize });
 
   const competitors = opts?.competitors ?? [];
+  const competitorError = opts?.competitorError;
+  const costEstimate = opts?.costEstimate ?? null;
 
   const competitorLines =
     competitors.length
@@ -412,10 +427,14 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
       hours,
       teamSize,
       skillsRaw,
+      costEstimate: opts?.costEstimate ?? undefined,
+      startupAdvantage: sas,
+      founderFit: ffs,
     },
     flags,
     timeToMvp: time,
     competitors: opts?.competitors ?? [],
+    costEstimate,
     competitorError: undefined,
   }
 
@@ -482,6 +501,29 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
     `### Evidence`,
     ...(ind.evidence.map(e => `- ${e}`)),
 
+    ``,
+    `## 💸 Estimated MVP Cost`,
+    ...(costEstimate
+      ? [
+        `- **Range:** $${Math.round(costEstimate.cost_low_usd).toLocaleString()} – $${Math.round(costEstimate.cost_high_usd).toLocaleString()}`,
+        `- **Cost Efficiency Score:** ${Math.round(costEstimate.cost_efficiency_score_0_1 * 100)}/100`,
+        `- **Confidence:** ${Math.round(costEstimate.confidence_0_1 * 100)}%`,
+        `- **Recommended MVP scope:** ${costEstimate.recommended_mvp_scope}`,
+        ``,
+        `### Key cost drivers`,
+        ...(costEstimate.key_cost_drivers?.length
+          ? costEstimate.key_cost_drivers.map((d: string) => `- ${d}`)
+          : [`- ⚠ Missing Data`]),
+        ``,
+        `### Assumptions`,
+        ...(costEstimate.assumptions?.length
+          ? costEstimate.assumptions.map((a: string) => `- ${a}`)
+          : [`- ⚠ Missing Data`]),
+      ]
+      : [
+        `- ⚠ Cost estimate unavailable`,
+      ]),
+
     "## 🥊 Top Competitors",
     competitorLines,
     "",
@@ -490,7 +532,35 @@ export function buildReportFromPayload(payload: any, opts?: { competitors?: Comp
   return {
     version: "6.2.2",
     generatedAt: new Date().toISOString(),
-    data,
+    data: {
+      inputsSnapshot: {
+        idea,
+        productType,
+        targetCustomer,
+        industry,
+        age,
+        hours,
+        teamSize,
+        skillsRaw,
+        problem,
+      },
+      //outputs
+      flags,
+      timeToMvp: time,
+
+      // computed fits
+      founderFit: ffs ?? undefined,
+      //startup advantage score here
+      startupAdvantage: sas ?? undefined,
+      //mvp cost estimate
+      mvpCostEstimate: costEstimate ?? undefined,
+      mvpCostEstimateError: opts?.mvpCostEstimateError,
+
+      //competitors must be acutal array
+      competitors,
+      //competitors debug string
+      competitorError: opts?.competitorError,
+    },
     markdown,
   }
 }
