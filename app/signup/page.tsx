@@ -1,5 +1,6 @@
 'use client'
 
+import type React from "react"
 import { useState } from 'react'
 import AgeStep from './Steps/AgeStep'
 import IdeaStep from './Steps/IdeaStep'
@@ -11,93 +12,244 @@ import IndustryExperienceStep from './Steps/IndustryExperienceStep'
 import SkillsStep from './Steps/SkillsStep'
 import TeamSizeStep from './Steps/TeamSizeStep'
 import HoursCommitmentStep from './Steps/HoursStep'
+import { useRouter } from "next/navigation"
+
+import { useSignupSession } from '@/lib/useSignupSession'
+import { StepKey, getProgressPercent, getPrevStepKey } from '@/lib/signupSteps'
+import next from "next"
+
+type ProductType = 'mobile' | 'web' | 'both' | 'other' | null
+const STORAGE_KEY = "krowe_signup_session_id"
+
+
+function safeJson<T = any>(s: string): T | null {
+  try {
+    return JSON.parse(s) as T
+  } catch {
+    return null
+  }
+}
+
+
 
 export default function SignupPage() {
-  const [age, setAge] = useState(18)
-  const [currentPhase, setCurrentPhase] = useState<'age' | 'idea' | 'product_type' | 'problem' | 'target_customer' | 'industry' | 'industry_experience' | 'skills_start'
-    | 'team_size'>('age')
-  const [idea, setIdea] = useState('')
-  const [productType, setProductType] = useState<'mobile' | 'web' | 'both' | 'other' | null>(null)
-  const [problem, setProblem] = useState('')
-  const [targetCustomer, setTargetCustomer] = useState('')
-  const [industry, setIndustry] = useState<IndustryId | null>(null)
-  const [industryOther, setIndustryOther] = useState('')
-  const [industryExperience, setIndustryExperience] = useState('')
-  const [skills, setSkills] = useState<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>([])
-  const [teamSize, setTeamSize] = useState(1)
-  const [hours, setHours] = useState(6)
+  const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
+  const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
+  const [canContinueAnyway, setCanContinueAnyway] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [aiReason, setAiReason] = useState<string | null>(null);
+  const router = useRouter();
+  const [finishing, setFinishing] = useState(false)
+
+  //Slice 1: Optional client only back nav (NOT persisted if user refreshes)
+  const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
+
+  if (loading) return <div className='p-6'>Loading...</div>;
+  if (error) return <div className='p-6 text-red-600'>{error}</div>
 
 
-  async function handleHoursContinue() {
-    const data = await sendToApi(String(hours))
-    const next = data.signupState?.current_phase
-    console.log('Next phase:', next)
-    if (next) setCurrentPhase(next)
+  const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
+  const progressPercent = getProgressPercent(stepKey);
+  const raw = answersByStepKey[stepKey] ?? "";
+  const value = raw
+
+
+  function setLocal(step: StepKey, v: unknown) {
+    const serialized = typeof v === 'string' ? v : JSON.stringify(v)
+    setAnswerLocal(step, serialized)
   }
 
-  async function handleTeamSizeContinue() {
-    const data = await sendToApi(String(teamSize))
-    const next = data.signupState?.current_phase
-    console.log('Next Phase: ', next)
-    if (next) setCurrentPhase(next)
-  }
-
-
-  async function handleSkillsContinue() {
-    const payload = skills.join(',') // ex: dev,marketing or none
-    const data = await sendToApi(payload)
-    const next = data.signupState?.current_phase
-    console.log('Next Phase: ', next)
-    if (next) setCurrentPhase(next)
-  }
-
-  async function handleIndustryExperienceContinue() {
-    const data = await sendToApi(industryExperience)
-    const next = data.signupState?.current_phase
-    console.log('Next Phase: ', next)
-    if (next) setCurrentPhase(next)
-  }
-
-
-  async function handleIndustryContinue() {
-    if (!industry) return
-
-    const payload =
-      industry === 'other' ? industryOther.trim() : industry
-
-    const data = await sendToApi(payload)
-    const next = data.signupState?.current_phase
-    console.log('Next phase:', next)
-    if (next) setCurrentPhase(next)
-  }
-
-  async function handleTargetCustomerContinue() {
+  async function finalizeSignup(sessionId: string) {
+    setFinishing(true);
     try {
-      const data = await sendToApi(targetCustomer)
-      const next = data.signupState?.current_phase
-      console.log('API Response:', data)
-      console.log('Current phase:', currentPhase)
-      console.log('Next phase:', next)
-      
-      // Only update if phase actually changed
-      if (next && next !== currentPhase) {
-        setCurrentPhase(next)
-      } else if (data.reply) {
-        // If validation failed, show the error message
-        console.error('Validation error:', data.reply)
-        alert(data.reply)
+      const res = await fetch("/api/signup/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(json?.error || "failed to compete signup");
       }
-    } catch (error) {
-      console.error('Error in handleTargetCustomerContinue:', error)
-      alert('An error occurred. Please try again.')
+
+      //this Clear resume token so /signup doesnt reopen a completed session
+      localStorage.removeItem(STORAGE_KEY);
+
+      //Redirect after the signup 
+      router.replace(`/signup/complete?sessionId=${sessionId}`); //when final platform put dashboard here
+    } finally {
+      setFinishing(false);
     }
   }
 
-  async function handleProblemContinue() {
-    const data = await sendToApi(problem)
-    const next = data.signupState?.current_phase
-    console.log('Next Phase:', next)
-    if (next) setCurrentPhase(next)
+  async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSource: "original" | "ai_suggested" | "user_edited" | "override") {
+    const result = await confirmAnswer(step, finalAnswer, finalSource);
+
+    // confirmAnswer MUST return { ok: true, nextStepKey: StepKey | null }
+    const nextStepKey = result?.nextStepKey ?? null;
+
+    if (!nextStepKey) {
+      const sid = sessionId || localStorage.getItem(STORAGE_KEY);
+      if (!sid) throw new Error("Missing sessionId at finalize");
+      await finalizeSignup(sid);
+    }
+
+    return result;
+  }
+
+
+
+  async function saveAndNext(step: StepKey, v: unknown, force = false) {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const serialized = typeof v === "string" ? v : JSON.stringify(v);
+      //1) save + validate (+maybe ai suggestion) but dont advance
+      const res = await submitAnswer(step, serialized, force);
+
+      //always update UI state from resposne
+
+
+      setIssues(res.issues || []);
+      setCanContinueAnyway(Boolean(res.canContinueWithWarning));
+      setAiSuggestion(res.aiSuggestion ?? null);
+      setAiReason(res.aiReason ?? null);
+
+      //2) if ok -> auto confirm (one click and advance)
+      if (res.validationStatus === "ok") {
+        await confirmAndMaybeFinish(step, serialized, "original");
+        clearFixUI();
+        setOverrideStepKey(null);
+      }
+
+
+
+      //ok -> clear issues and clear back overide
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function goBack() {
+    const prev = getPrevStepKey(stepKey)
+    if (!prev) return
+    setOverrideStepKey(prev)
+  }
+
+
+
+  const continueAnyway = async () => {
+    if (!canContinueAnyway) return // safety
+    setSaving(true)
+    try {
+      // confirm the users current value and advance
+      await confirmAndMaybeFinish(stepKey, value, 'original')
+      clearFixUI()
+      setOverrideStepKey(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const clearFixUI = () => {
+    setIssues([]);
+    setAiSuggestion(null);
+    setAiReason(null);
+    setCanContinueAnyway(false);
+  }
+
+  function renderWithIssues(ui: React.ReactNode) {
+    return (
+      <>
+        {(issues.length > 0 || aiSuggestion) && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl border bg-white">
+            {issues.length > 0 && (
+              <>
+                <div className="font-semibold mb-2 text-black">Fix needed</div>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                  {issues.map((i, idx) => (
+                    <li key={idx}>{i.message}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {/* AI suggestion box */}
+            {aiSuggestion && (
+              <div className="mt-4 p-3 rounded-lg border bg-gray-50">
+                <div className="text-sm font-medium mb-1 text-black">Suggested rewrite</div>
+                {aiReason && <div className="text-xs text-gray-500 mb-2">{aiReason}</div>}
+                <div className="text-sm whitespace-pre-wrap text-black">{aiSuggestion}</div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* CONFIRM AI suggestion and advance */}
+                  <button
+                    disabled={saving || finishing}
+                    className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm"
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        await confirmAndMaybeFinish(stepKey, aiSuggestion, "ai_suggested");
+                        clearFixUI();
+                        setOverrideStepKey(null);
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                  >
+                    Use suggestion
+                  </button>
+
+                  {/* Load suggestion into input so user can edit */}
+                  <button
+                    disabled={saving || finishing}
+                    className="px-3 py-2 rounded-lg border text-sm text-black"
+                    onClick={() => setLocal(stepKey, aiSuggestion)}
+                  >
+                    Edit suggestion
+                  </button>
+
+                  {/* CONFIRM user's edited value and advance */}
+                  <button
+                    disabled={saving || finishing}
+                    className="px-3 py-2 rounded-lg border text-sm text-black"
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        await confirmAndMaybeFinish(stepKey, value, "user_edited");
+                        clearFixUI();
+                        setOverrideStepKey(null);
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                  >
+                    Save my edit
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Keep original anyway (only after fail twice) */}
+            {canContinueAnyway && (
+              <button
+                onClick={continueAnyway}
+                disabled={saving}
+                className="mt-3 text-sm underline text-gray-600"
+              >
+                Keep my original anyway (results may be less accurate)
+              </button>
+            )}
+          </div>
+        )}
+
+        {ui}
+      </>
+    );
   }
 
 
@@ -107,171 +259,203 @@ export default function SignupPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     })
-    
+
     if (!res.ok) {
       const errorText = await res.text()
       throw new Error(`API error: ${res.status} - ${errorText}`)
     }
-    
+
     const data = await res.json()
     return data
   }
 
-  async function handleAgeContinue() {
-    // for now send age to your existing API shape
-    const data = await sendToApi(String(age))
-    const next = data.signupState?.current_phase
-    console.log('Next Phase:', next)
-    if (next) setCurrentPhase(next)
-  }
 
-  async function handleIdeaContinue() {
-    const data = await sendToApi(idea)
-    const next = data.signupState?.current_phase
-    console.log('Next Phase:', next)
-    if (next) setCurrentPhase(next)
-  }
-
-  async function handleProductTypeContinue() {
-    if (!productType) return
-    const data = await sendToApi(productType) // send web app, mobile, both or none 
-    const next = data.signupState?.current_phase
-    console.log('Next Phase:', next)
-    if (next) setCurrentPhase(next)
-  }
-
-  if (currentPhase === 'age') {
-    return (
+  if (stepKey === 'age') {
+    const ageValue = raw ? Number(raw) : 18
+    return renderWithIssues(
       <AgeStep
-        value={age}
-        onChange={setAge}
-        onBack={() => console.log('Back pressed')}
-        onContinue={handleAgeContinue}
-        progressPercent={5}
+        value={ageValue}
+        onChange={(v: number) => setLocal('age', String(v))}
+        onBack={goBack}
+        onContinue={() => saveAndNext('age', String(ageValue))}
+        progressPercent={progressPercent}
       />
     )
   }
 
-  if (currentPhase === 'idea') {
-    return (
+  if (stepKey === 'idea') {
+    const ideaValue = raw || ''
+
+    return renderWithIssues(
       <IdeaStep
-        value={idea}
-        onChange={setIdea}
-        onBack={() => setCurrentPhase('age')}
-        onContinue={handleIdeaContinue}
-        progressPercent={15}
+        value={ideaValue}
+        onChange={(v: string) => setLocal('idea', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('idea', ideaValue)}
+        progressPercent={progressPercent}
       />
     )
   }
 
-  if (currentPhase === 'product_type') {
-    return (
+  if (stepKey === 'product_type') {
+    const productTypeValue = (raw || null) as ProductType
+    return renderWithIssues(
       <ProductTypeStep
-        value={productType}
-        onChange={setProductType}
-        onBack={() => setCurrentPhase('idea')}
-        onContinue={handleProductTypeContinue}
-        progressPercent={25}
-      />
-    )
-  }
-
-  if (currentPhase === 'problem') {
-    return (
-      <ProblemStep
-        value={problem}
-        onChange={setProblem}
-        onBack={() => setCurrentPhase('product_type')}
-        onContinue={handleProblemContinue}
-        progressPercent={42}
-      />
-    )
-  }
-
-  if (currentPhase === 'target_customer') {
-    return (
-      <TargetCustomerStep
-        value={targetCustomer}
-        onChange={setTargetCustomer}
-        onBack={() => setCurrentPhase('problem')}
-        onContinue={handleTargetCustomerContinue}
-        progressPercent={55}
-      />
-    )
-  }
-
-  if (currentPhase === 'industry') {
-    return (
-      <IndustryStep
-        value={industry}
-        otherValue={industryOther}
-        onChange={(v) => {
-          setIndustry(v)
-          if (v !== 'other') setIndustryOther('') // ✅ clear the OTHER text only
+        value={productTypeValue}
+        onChange={(v: ProductType) => setLocal('product_type', v ?? '')}
+        onBack={goBack}
+        onContinue={() => {
+          // allow null selection to be blocked by UI (same as your old code)
+          if (!productTypeValue) return
+          return saveAndNext('product_type', productTypeValue)
         }}
-        onOtherChange={setIndustryOther}
-        onBack={() => setCurrentPhase('target_customer')}
-        onContinue={handleIndustryContinue}
-        progressPercent={65}
+        progressPercent={progressPercent}
       />
     )
   }
+  if (stepKey === 'problem') {
+    const problemValue = raw || ''
 
 
-  if (currentPhase === 'industry_experience') {
-    return (
+    return renderWithIssues(
+      <ProblemStep
+        value={problemValue}
+        onChange={(v: string) => setLocal('problem', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('problem', problemValue)}
+        progressPercent={progressPercent}
+      />
+    )
+
+
+
+  }
+
+  if (stepKey === 'target_customer') {
+    const targetCustomerValue = raw || ''
+
+
+    return renderWithIssues(
+      <TargetCustomerStep
+        value={targetCustomerValue}
+        onChange={(v: string) => setLocal('target_customer', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('target_customer', targetCustomerValue)}
+        progressPercent={progressPercent}
+      />
+    )
+
+
+
+  }
+
+  if (stepKey === 'industry') {
+    // Stored as JSON: { industry: IndustryId|null, other: string }
+    const parsed = safeJson<{ industry: IndustryId | null; other: string }>(raw) ?? {
+      industry: null,
+      other: '',
+    }
+
+
+    const industryValue = parsed.industry
+    const industryOtherValue = parsed.other ?? ''
+
+    return renderWithIssues(
+      <IndustryStep
+        value={industryValue}
+        otherValue={industryOtherValue}
+        onChange={(v: IndustryId | null) => {
+          // mimic your old behavior: clear OTHER text when not "other"
+          const nextOther = v !== 'other' ? '' : industryOtherValue
+          setLocal('industry', { industry: v, other: nextOther })
+        }}
+        onOtherChange={(t: string) => {
+          setLocal('industry', { industry: industryValue, other: t })
+        }}
+        onBack={goBack}
+        onContinue={() => {
+          if (!industryValue) return
+          return saveAndNext('industry', { industry: industryValue, other: industryOtherValue })
+        }}
+        progressPercent={progressPercent}
+      />
+    )
+
+
+
+  }
+
+  if (stepKey === 'industry_experience') {
+    const industryExperienceValue = raw || ''
+
+
+    return renderWithIssues(
       <IndustryExperienceStep
-        value={industryExperience}
-        onChange={setIndustryExperience}
-        onBack={() => setCurrentPhase('industry')}
-        onContinue={handleIndustryExperienceContinue}
+        value={industryExperienceValue}
+        onChange={(v: string) => setLocal('industry_experience', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('industry_experience', industryExperienceValue)}
+        progressPercent={progressPercent}
       />
     )
+
+
+
   }
 
-  if (currentPhase === 'skills_start') {
-    return (
+  if (stepKey === 'skills') {
+    // Stored as JSON array: ["dev","marketing",...]
+    const skillsValue = safeJson<Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>>(raw) ?? []
+
+    return renderWithIssues(
       <SkillsStep
-        value={skills}
-        onChange={setSkills}
-        onBack={() => setCurrentPhase('industry_experience')}
-        onContinue={handleSkillsContinue}
-        progressPercent={78}
+        value={skillsValue}
+        onChange={(v: Array<'dev' | 'marketing' | 'leadership' | 'other' | 'none'>) =>
+          setLocal('skills', v)
+        }
+        onBack={goBack}
+        onContinue={() => saveAndNext('skills', skillsValue)}
+        progressPercent={progressPercent}
       />
     )
   }
 
-  if (currentPhase === 'team_size') {
-    return (
+  if (stepKey === 'team_size') {
+    const teamSizeValue = raw ? Number(raw) : 1
+
+
+    return renderWithIssues(
       <TeamSizeStep
-        value={teamSize}
-        onChange={setTeamSize}
-        onBack={() => setCurrentPhase('skills_start')}
-        onContinue={handleTeamSizeContinue}
-        progressPercent={86}
+        value={teamSizeValue}
+        onChange={(v: number) => setLocal('team_size', String(v))}
+        onBack={goBack}
+        onContinue={() => saveAndNext('team_size', String(teamSizeValue))}
+        progressPercent={progressPercent}
       />
     )
+
   }
 
-  if (currentPhase === 'hours_commitment') {
-    return (
+  if (stepKey === 'hours') {
+    const hoursValue = raw ? Number(raw) : 6
+    return renderWithIssues(
       <HoursCommitmentStep
-        value={hours}
-        onChange={setHours}
-        onBack={() => setCurrentPhase('team_size')}
-        onContinue={handleHoursContinue}
-        progressPercent={100}
+        value={hoursValue}
+        onChange={(v: number) => setLocal('hours', String(v))}
+        onBack={goBack}
+        onContinue={() => saveAndNext('hours', String(hoursValue))}
+        progressPercent={progressPercent}
       />
     )
   }
 
-  // temporary placeholder until we build Q3 screen next
+  //fallback
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="p-6 border rounded-lg bg-white">
-        <p className="font-medium text-gray-800">Next phase: {currentPhase}</p>
+        <p className="font-medium text-gray-800">Unknown step: {String(stepKey)}</p>
         <p className="text-sm text-gray-500 mt-2">
-          We’ll build this screen next.
+          Check your StepKey list in <code>lib/signupSteps.ts</code>.
         </p>
       </div>
     </div>
