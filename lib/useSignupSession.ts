@@ -2,16 +2,11 @@
 
 import {useEffect, useMemo, useState} from "react";
 import {StepKey, getFirstStepKey} from "@/lib/signupSteps"
+import { STORAGE_KEYS } from "@/lib/constants"
+import type { SessionState } from "@/lib/types/session";
+import type { SubmitAnswerResponse, ConfirmAnswerResponse } from "@/lib/types/answers";
 
-const STORAGE_KEY = "krowe_signup_session_id"
-
-type SessionState = {
-    sessionId: string | null;
-    currentStepKey: StepKey;
-    answersByStepKey: Record<string, string>;
-    loading: boolean;
-    error: string | null;
-};
+const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
 export function useSignupSession(){
     const [state, setState] = useState<SessionState>({
@@ -107,15 +102,7 @@ export function useSignupSession(){
             currentStepKey: json.nextStepKey ?? s.currentStepKey,
         }));
 
-        return json as {
-            validationStatus: "ok" | "needs_fix";
-            nextStepKey: StepKey | null;
-            issues: {code: string; message: string; severity?: "error" | "warning" }[];
-            failCount: number;
-            canContinueWithWarning: boolean;
-            aiSuggestion: string | null;
-            aiReason: string | null;
-        };
+        return json as SubmitAnswerResponse;
     };
 
 
@@ -151,7 +138,7 @@ export function useSignupSession(){
             answersByStepKey: {...s.answersByStepKey, [stepKey]: finalAnswer},
         }));
 
-        return json as {ok: boolean; nextStepKey: StepKey | null};
+        return json as ConfirmAnswerResponse;
     }
 
     return useMemo(

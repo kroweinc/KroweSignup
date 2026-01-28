@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { getNextStepKey, isValidStepKey, StepKey } from "@/lib/signupSteps";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { normalizeAnswer, validateStep } from "@/lib/validators";
+import { validateStep } from "@/lib/validators";
+import { normalizeAnswer } from "@/lib/utils/strings";
 import { aiRewrite } from "@/lib/aiRewrite";
+import { VALIDATION_THRESHOLDS } from "@/lib/constants";
+import type { SubmitAnswerRequest } from "@/lib/types/api";
 
 type Body = {
   sessionId: string;
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
   const nextFailCount =
     validation.status === "needs_fix" ? prevFailCount + 1 : 0;
 
-  const canContinueWithWarning = validation.status === "needs_fix" && nextFailCount >= 2; 
+  const canContinueWithWarning = validation.status === "needs_fix" && nextFailCount >= VALIDATION_THRESHOLDS.FAIL_COUNT_BEFORE_WARNING; 
   // meaning: they already failed once (fail #1), now on fail #2+ we let them continue :contentReference[oaicite:11]{index=11}
 
   // upsert answer + validation fields

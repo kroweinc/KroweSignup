@@ -1,7 +1,8 @@
 import OpenAI from "openai";
+import { ENV } from "../env";
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: ENV.OPENAI_API_KEY,
 });
 
 export type MarketSizeLLM = {

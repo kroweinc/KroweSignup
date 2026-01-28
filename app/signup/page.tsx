@@ -2,40 +2,36 @@
 
 import type React from "react"
 import { useState } from 'react'
-import AgeStep from './Steps/AgeStep'
-import IdeaStep from './Steps/IdeaStep'
-import ProductTypeStep from './Steps/ProductTypeStep'
-import ProblemStep from './Steps/ProblemStep'
-import TargetCustomerStep from './Steps/TargetCustomerStep'
-import IndustryStep, { IndustryId } from './Steps/IndustryStep'
-import IndustryExperienceStep from './Steps/IndustryExperienceStep'
-import SkillsStep from './Steps/SkillsStep'
-import TeamSizeStep from './Steps/TeamSizeStep'
-import HoursCommitmentStep from './Steps/HoursStep'
+import {
+  AgeStep,
+  IdeaStep,
+  ProductTypeStep,
+  ProblemStep,
+  TargetCustomerStep,
+  IndustryStep,
+  IndustryExperienceStep,
+  SkillsStep,
+  TeamSizeStep,
+  HoursCommitmentStep,
+  type IndustryId,
+} from './Steps'
 import { useRouter } from "next/navigation"
 
 import { useSignupSession } from '@/lib/useSignupSession'
 import {StepKey, getProgressPercent, getPrevStepKey} from '@/lib/signupSteps'
+import { STORAGE_KEYS, DEFAULT_VALUES } from '@/lib/constants'
+import { safeJson } from '@/lib/utils/parsing'
+import type { ProductType } from '@/lib/types/answers'
+import type { FinalAnswerSource } from '@/lib/types/answers'
 import next from "next"
 
-type ProductType = 'mobile' | 'web' | 'both' | 'other' | null
- const STORAGE_KEY = "krowe_signup_session_id"
-
-
-function safeJson<T = any>(s: string): T | null {
-  try{
-    return JSON.parse(s) as T
-  } catch {
-    return null
-  }
-}
+const STORAGE_KEY = STORAGE_KEYS.SESSION_ID
 
 
 
 export default function SignupPage() {
   const {loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
   const [issues, setIssues] = useState<{ code: string; message: string; severity?: string }[]>([]);
-  const [canContinueAnyway, setCanContinueAnyway] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiReason, setAiReason] = useState<string | null>(null);
@@ -47,7 +43,6 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
   if (loading) return <div className='p-6'>Loading...</div>;
   if (error) return <div className='p-6 text-red-600'>{error}</div>
-    
   
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
@@ -85,7 +80,7 @@ const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
     }
   }
 
-async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSource: "original" | "ai_suggested" | "user_edited" | "override") {
+async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSource: FinalAnswerSource) {
   const result = await confirmAnswer(step, finalAnswer, finalSource);
 
   // confirmAnswer MUST return { ok: true, nextStepKey: StepKey | null }
@@ -115,7 +110,6 @@ async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSo
 
       
         setIssues(res.issues || []);
-        setCanContinueAnyway(Boolean(res.canContinueWithWarning));
         setAiSuggestion(res.aiSuggestion ?? null);
         setAiReason(res.aiReason ?? null);
 
@@ -129,6 +123,9 @@ async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSo
 
 
       //ok -> clear issues and clear back overide
+    } catch (error: any) {
+      console.error("Error in saveAndNext:", error);
+      setIssues([{ code: "ERROR", message: error?.message || "An error occurred. Please try again." }]);
     } finally {
       setSaving(false);
     }
@@ -140,24 +137,10 @@ async function confirmAndMaybeFinish(step: StepKey, finalAnswer: string, finalSo
     setOverrideStepKey(prev)
   }
 
-const continueAnyway = async () => {
-  if(!canContinueAnyway) return; //saftey
-  setSaving(true);
-  try {
-    //confirm the users current value and advance
-    await confirmAndMaybeFinish(stepKey, value, "original")
-    clearFixUI();
-    setOverrideStepKey(null);
-  }finally {
-    setSaving(false);
-  }
-}
-
 const clearFixUI = () => {
   setIssues([]);
   setAiSuggestion(null);
   setAiReason(null);
-  setCanContinueAnyway(false);
 }
 
 function renderWithIssues(ui: React.ReactNode) {
@@ -232,16 +215,6 @@ function renderWithIssues(ui: React.ReactNode) {
             </div>
           )}
 
-          {/* Keep original anyway (only after fail twice) */}
-          {canContinueAnyway && (
-            <button
-              onClick={continueAnyway}
-              disabled={saving}
-              className="mt-3 text-sm underline text-gray-600"
-            >
-              Keep my original anyway (results may be less accurate)
-            </button>
-          )}
         </div>
       )}
 
@@ -254,7 +227,7 @@ function renderWithIssues(ui: React.ReactNode) {
   //render the current step
 
   if (stepKey === 'age'){
-    const ageValue = raw? Number(raw) : 18
+    const ageValue = raw? Number(raw) : DEFAULT_VALUES.AGE
     return renderWithIssues(
       <AgeStep
       value={ageValue}
@@ -404,7 +377,7 @@ return renderWithIssues (
 }
 
 if (stepKey === 'team_size') {
-const teamSizeValue = raw ? Number(raw) : 1
+const teamSizeValue = raw ? Number(raw) : DEFAULT_VALUES.TEAM_SIZE
 
 
 return renderWithIssues (
@@ -420,7 +393,7 @@ return renderWithIssues (
 }
 
 if (stepKey === 'hours') {
-const hoursValue = raw ? Number(raw) : 6
+const hoursValue = raw ? Number(raw) : DEFAULT_VALUES.HOURS
 return renderWithIssues (
   <HoursCommitmentStep
     value={hoursValue}

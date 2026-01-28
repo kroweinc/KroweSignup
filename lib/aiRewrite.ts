@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import { StepKey } from "./signupSteps";
+import { ENV } from "./env";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY});
+const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 type RewriteResponse = {
     suggestion: string; // the rewritten answer
