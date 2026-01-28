@@ -1,6 +1,7 @@
 import OpenAI from "openai";
+import { ENV } from "../env";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 export type Competitor = {
     name: string;

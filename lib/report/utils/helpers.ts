@@ -1,0 +1,38 @@
+/**
+ * Helper utilities for report building
+ */
+
+import { StepKey } from "../../signupSteps";
+import type { SignupPayload } from "../../types/report";
+import { safeNumber } from "../../utils/parsing";
+
+/**
+ * Extract final answer from payload for a given step key
+ */
+export function getFinal(payload: SignupPayload, key: StepKey): string | null {
+  const v = payload?.[key]?.final;
+  if (typeof v === "string" && v.trim()) return v.trim();
+  return null;
+}
+
+/**
+ * Classify hours commitment into a readable label
+ */
+export function classifyHours(hours: number | null): string | null {
+  if (hours == null) return "⚠ Missing Data";
+  if (hours <= 3) return "Very reasonable";
+  if (hours <= 7) return "Reasonable";
+  if (hours <= 12) return "Normal";
+  if (hours <= 18) return "Ambitious";
+  if (hours <= 25) return "Difficult";
+  if (hours <= 35) return "Borderline unreasonable";
+  if (hours <= 50) return "Unreasonable";
+  return "Completely unreasonable";
+}
+
+/**
+ * Format number as USD with abbreviations
+ */
+export function formatUSD(n: number): string {
+  return `$${n.toLocaleString()}`;
+}

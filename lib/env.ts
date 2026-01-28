@@ -1,0 +1,61 @@
+/**
+ * Environment Variable Validation and Access
+ * 
+ * Centralized validation and type-safe access to environment variables.
+ * Validates all required variables at module load time to catch configuration
+ * errors early.
+ */
+
+type EnvConfig = {
+  supabase: {
+    url: string;
+    anonKey: string;
+  };
+  openai: {
+    apiKey: string;
+  };
+};
+
+/**
+ * Validates that a required environment variable exists
+ */
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value || value.trim() === "") {
+    throw new Error(
+      `Missing required environment variable: ${key}\n` +
+      `Please check your .env file and ensure ${key} is set.`
+    );
+  }
+  return value;
+}
+
+/**
+ * Validates and returns all environment variables
+ */
+function validateEnv(): EnvConfig {
+  return {
+    supabase: {
+      url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+      anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    },
+    openai: {
+      apiKey: requireEnv("OPENAI_API_KEY"),
+    },
+  };
+}
+
+/**
+ * Validated environment configuration
+ * Throws an error at module load time if any required variables are missing
+ */
+export const env = validateEnv();
+
+/**
+ * Type-safe accessors for individual environment variables
+ */
+export const ENV = {
+  SUPABASE_URL: env.supabase.url,
+  SUPABASE_ANON_KEY: env.supabase.anonKey,
+  OPENAI_API_KEY: env.openai.apiKey,
+} as const;

@@ -4,11 +4,12 @@ import { buildReportFromPayload } from "@/lib/report/buildReport";
 import { findCompetitorsViaWeb } from "@/lib/report/findCompetitors";
 import { estimateMvpCostViaLLM } from "@/lib/report/estimateMvpCost";
 import { estimateMarketSizeLLM } from "@/lib/report/marketsize";
+import { REPORT_VERSION } from "@/lib/constants";
+import type { GenerateReportRequest } from "@/lib/types/api";
 
+type Body = GenerateReportRequest;
 
-type Body = { sessionId: string };
-
-const CURRENT_VERSION = "6.2.2";
+const CURRENT_VERSION = REPORT_VERSION;
 
 export async function POST(req: Request) {
   const supabase = createServerSupabaseClient();

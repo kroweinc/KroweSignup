@@ -1,8 +1,9 @@
 import {NextResponse} from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { SIGNUP_STEPS, StepKey } from "@/lib/signupSteps";
+import type { CompleteSignupRequest } from "@/lib/types/api";
 
-type Body = { sessionId: string};
+type Body = CompleteSignupRequest;
 
 const REQUIRED_STEPS: StepKey [] = SIGNUP_STEPS; //tigthen here for optional steps
 

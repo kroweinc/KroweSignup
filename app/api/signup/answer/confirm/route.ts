@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { getNextStepKey, isValidStepKey, StepKey } from "@/lib/signupSteps";
+import type { ConfirmAnswerRequest } from "@/lib/types/api";
 
-type Body = {
-    sessionId: string;
-    stepKey: string;
-    finalAnswer: string;
-    finalSource: "original" | "ai_suggested" | "user_edited" | "override";
-};
+type Body = ConfirmAnswerRequest;
 
 export async function POST(req: Request) {
     const supabase = createServerSupabaseClient();
