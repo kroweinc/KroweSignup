@@ -370,10 +370,6 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
     }),
     buildMvpCostSection({ costEstimate }),
     buildCompetitorsSection({ competitors }),
-    marketSize ? buildMarkdownWithMarketSize({
-      existingMarkdown: "",
-      marketSize,
-    }) : "",
   ].join("\n");
 
   return {
