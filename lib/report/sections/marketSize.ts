@@ -29,7 +29,7 @@ export function buildMarketSizeSection(params: MarketSizeParams): string {
     ``,
     `### 📅 Planning Market Size (Year 1)`,
     `- **Target Revenue:** ${fmt(y1.target_revenue_usd.low)} - ${fmt(y1.target_revenue_usd.high)}`,
-    `- **Customer Count:** ${y1.customer_count.low.toLocaleString()} - ${y1.customer_count.high.toLocaleString()}`,+
+    `- **Customer Count:** ${y1.customer_count.low.toLocaleString()} - ${y1.customer_count.high.toLocaleString()}`,
     `- **Notes:** ${marketSize.notes?.[0] || ""}`,
     ``,
   ].join("\n");

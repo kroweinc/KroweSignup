@@ -13,7 +13,6 @@ export type MarketSizeLLM = {
     planning_year_1: {
         target_revenue_usd: { low: number; high: number };
         customer_count: { low: number; high: number };
-        implied_arpa_usd: { low: number; high: number };
     };
     key_assumptions: string[];
     confidence: number; // 0–1
@@ -58,8 +57,6 @@ function isValidMarketSize(x: any): x is MarketSizeLLM {
     typeof x?.planning_year_1?.target_revenue_usd?.high === "number" &&
     typeof x?.planning_year_1?.customer_count?.low === "number" &&
     typeof x?.planning_year_1?.customer_count?.high === "number" &&
-    typeof x?.planning_year_1?.implied_arpa_usd?.low === "number" &&
-    typeof x?.planning_year_1?.implied_arpa_usd?.high === "number" &&
     Array.isArray(x?.key_assumptions) &&
     typeof x?.confidence === "number" &&
     Array.isArray(x?.notes)
@@ -169,7 +166,7 @@ export async function estimateMarketSizeLLM(input: {
                         planning_year_1: {
                             type: "object",
                             additionalProperties: false,
-                            required: ["target_revenue_usd", "customer_count", "implied_arpa_usd"],
+                            required: ["target_revenue_usd", "customer_count"],
                             properties: {
                                 target_revenue_usd: {
                                     type: "object",

@@ -245,7 +245,6 @@ export function buildMarkdownWithMarketSize(params: {
     `### 📅 Planning Market Size (Year 1)`,
     `- **Target Revenue:** $${fmtUSD(y1.target_revenue_usd.low)}–$${fmtUSD(y1.target_revenue_usd.high)}`,
     `- **Customer Count:** ${y1.customer_count.low.toLocaleString()}–${y1.customer_count.high.toLocaleString()}`,
-    `- **Implied ARPA:** $${fmtUSD(y1.implied_arpa_usd.low)}–$${fmtUSD(y1.implied_arpa_usd.high)}`,
     ``,
     `### Assumptions`,
     ...(ms.key_assumptions?.length ? ms.key_assumptions.map((a) => `- ${a}`) : [`- (none provided)`]),
