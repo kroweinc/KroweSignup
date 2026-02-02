@@ -34,8 +34,5 @@ export function buildSkillsAndIndustrySection(params: SkillsAndIndustryParams): 
     `- **Level:** ${industry.level}`,
     ...(industry.score != null ? [`- **Score:** ${Math.round(industry.score * 100)}%`] : []),
     ``,
-    `### Evidence`,
-    ...(industry.evidence.map(e => `- ${e}`)),
-    ``,
   ].join("\n");
 }

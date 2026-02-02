@@ -54,30 +54,31 @@ export function industryFamiliarityScore(industryExp: string | null): {
   level: "High" | "Medium" | "Low" | "Unknown";
   evidence: string[];
 } {
-  if (!industryExp) return { score: null, level: "Unknown", evidence: ["⚠ Missing Data"] };
+  if (!industryExp) return { score: null, level: "Unknown", evidence: [] };
 
   const t = industryExp.toLowerCase();
   const evidence: string[] = [];
-
+  
   const hasSuccessfulStartup = /(exit|acquir|raised|revenue|profit|grew to|\busers\b)/.test(t);
   const hasWork = /(intern|job|worked|employ|company|role|months|years)/.test(t);
   const hasStudy = /(major|degree|stud(y|ied)|cs|finance|business|certificate|course)/.test(t);
   const hasFailedStartup = /(failed|shut down|didn'?t work|pivoted|couldn'?t)/.test(t);
   const hasPublicWork = /(published|portfolio|github|paper|blog|video)/.test(t);
 
-  if (hasSuccessfulStartup) evidence.push("Mentions traction/revenue/exit-like outcomes");
-  if (hasWork) evidence.push("Mentions work/internship experience");
-  if (hasStudy) evidence.push("Mentions relevant study/certificates");
-  if (hasFailedStartup) evidence.push("Mentions prior attempt (even if failed)");
-  if (hasPublicWork) evidence.push("Mentions public work/portfolio");
+  if (hasSuccessfulStartup) evidence.push("Has successful startup experience (exit, acquisition, or revenue)");
+  if (hasWork) evidence.push("Has relevant work experience in the industry");
+  if (hasStudy) evidence.push("Has formal education or certifications in the field");
+  if (hasFailedStartup) evidence.push("Has prior startup experience (including failed attempts)");
+  if (hasPublicWork) evidence.push("Has public portfolio or published work");
+
+  if (hasSuccessfulStartup) return { score: 0.90, level: "High", evidence };
+  if (hasWork) return { score: 0.70, level: "Medium", evidence };
+  if (hasStudy) return { score: 0.60, level: "Medium", evidence };
+  if (hasFailedStartup) return { score: 0.45, level: "Low", evidence };
+  if (hasPublicWork) return { score: 0.45, level: "Low", evidence };
 
   // Priority from spec (simplified into tiers) :contentReference[oaicite:5]{index=5}
-  if (hasSuccessfulStartup) return { score: 0.90, level: "High", evidence };
-  if (hasWork && hasStudy) return { score: 0.70, level: "Medium", evidence };
-  if (hasWork) return { score: 0.60, level: "Medium", evidence };
-  if (hasStudy || hasFailedStartup || hasPublicWork) return { score: 0.45, level: "Low", evidence };
-
-  return { score: 0.35, level: "Low", evidence: evidence.length ? evidence : ["Generic / unclear experience"] };
+  return { score: 0, level: "Unknown", evidence: ["No industry-specific experience detected"] };
 }
 
 //update later when skillScore quetsion is more defined and inlcude LLM to anaylze
