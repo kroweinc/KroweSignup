@@ -157,7 +157,7 @@ function ScoreRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-muted"
+          className="text-gray-200"
         />
         <circle
           cx={size / 2}
@@ -169,11 +169,12 @@ function ScoreRing({
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
+          transform={`rotate(210 ${size / 2} ${size / 2})`}
           className="text-orange-500 transition-all duration-500"
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-semibold">{Number.isFinite(safeScore) ? safeScore : "—"}</span>
+        <span className="text-lg font-semibold text-black">{Number.isFinite(safeScore) ? safeScore : "—"}</span>
       </div>
     </div>
   );
@@ -465,7 +466,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                     </button>
                   </Tooltip>
                 </div>
-                <p className="text-sm text-muted-foreground">SAS Score</p>
+                <p className="text-sm text-black">SAS Score</p>
               </div>
               {startupAdvantage != null && (
                 <ScoreRing score={startupAdvantage.score} />
@@ -517,19 +518,19 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-center p-3 bg-[#F8F8F8] rounded-lg">
                 <p className="text-2xl font-bold text-black">
                   {inputs.age != null ? String(inputs.age) : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">Age</p>
               </div>
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-center p-3 bg-[#F8F8F8] rounded-lg">
                 <p className="text-2xl font-bold text-black">
                   {inputs.teamSize != null ? String(inputs.teamSize) : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">Team</p>
               </div>
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-center p-3 bg-[#F8F8F8] rounded-lg">
                 <p className="text-lg font-bold text-black">
                   {inputs.hours != null ? `${inputs.hours}h` : "—"}
                 </p>
