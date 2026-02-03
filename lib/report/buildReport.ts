@@ -410,6 +410,10 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
 
       thingsNeed: things,
       marketSize,
+
+      // for UI Skills & Industry card
+      skills,
+      industryResult: ind,
     },
     markdown,
   }
