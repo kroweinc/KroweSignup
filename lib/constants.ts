@@ -58,7 +58,7 @@ export const VALIDATION_THRESHOLDS = {
 // ============================================================================
 
 export const DEFAULT_VALUES = {
-  AGE: 18,
+  AGE: 0,
   HOURS: 6,
   TEAM_SIZE: 1,
 } as const;
