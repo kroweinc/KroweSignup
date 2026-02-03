@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useSignupFixBanner } from '../SignupFixBannerContext'
 
 type SignupStepLayoutProps = {
   progressPercent?: number
@@ -12,6 +13,7 @@ type SignupStepLayoutProps = {
  * Use this so header/footer stay the same; only change the content passed as children.
  */
 export default function SignupStepLayout({ progressPercent = 0, children }: SignupStepLayoutProps) {
+  const fixBanner = useSignupFixBanner()
   return (
     <div className="min-h-screen bg-white text-foreground flex flex-col">
       <header className="border-b border-gray-200 bg-white/90 backdrop-blur">
@@ -33,8 +35,15 @@ export default function SignupStepLayout({ progressPercent = 0, children }: Sign
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        {children}
+      <main className="flex-1 flex flex-col items-center px-6 py-12">
+        {fixBanner && (
+          <div className="w-full max-w-6xl mb-6">
+            {fixBanner}
+          </div>
+        )}
+        <div className="flex-1 flex items-center justify-center w-full">
+          {children}
+        </div>
       </main>
 
       <footer className="py-6 text-center">
