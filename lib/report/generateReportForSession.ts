@@ -19,7 +19,6 @@ import { findCompetitorsViaWeb, type Competitor } from "./findCompetitors";
 import { estimateMvpCostViaLLM, type MvpCostEstimate } from "./estimateMvpCost";
 import { estimateMarketSizeLLM, type MarketSizeLLM } from "./marketsize";
 import { computeThingsNeededLLM, type ThingsNeededResult } from "./thingsNeeded";
-import { REPORT_VERSION } from "@/lib/constants";
 
 export type GenerateReportOptions = {
   /** Reason for generation - used for logging/debugging */
@@ -41,6 +40,10 @@ export type GenerateReportResult = {
   };
 };
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 /**
  * Generate a full report for a session, including all LLM enrichment.
  *
@@ -52,7 +55,7 @@ export async function generateReportForSession(
   sessionId: string,
   opts: GenerateReportOptions = {}
 ): Promise<GenerateReportResult> {
-  const { reason = "generate", forceRegenerate = false } = opts;
+  const { reason = "generate" } = opts;
   const supabase = createServerSupabaseClient();
 
   console.log(`[generateReportForSession] Starting (reason: ${reason}) for session: ${sessionId}`);
@@ -95,77 +98,98 @@ export async function generateReportForSession(
   let marketSize: MarketSizeLLM | null = null;
   let thingsNeeded: ThingsNeededResult | null = null;
 
-  // 3a) Find competitors via web search
-  if (idea && industry) {
-    try {
-      console.log(`[generateReportForSession] Running competitor search...`);
-      const res = await findCompetitorsViaWeb({ idea, industry, targetCustomer });
-      competitors = res.competitors ?? [];
-      console.log(`[generateReportForSession] Found ${competitors.length} competitors`);
-    } catch (e: any) {
-      competitorError = e?.message || "Competitor search failed";
-      console.error("[generateReportForSession] Competitor search error:", competitorError);
-      competitors = [];
-    }
-  } else {
-    console.log("[generateReportForSession] Skipping competitor search (missing idea or industry)");
-  }
+  // 3) Run enrichment modules in parallel
+  const competitorPromise = idea && industry
+    ? (() => {
+        console.log(`[generateReportForSession] Running competitor search...`);
+        return findCompetitorsViaWeb({ idea, industry, targetCustomer });
+      })()
+    : (() => {
+        console.log("[generateReportForSession] Skipping competitor search (missing idea or industry)");
+        return Promise.resolve({ competitors: [] as Competitor[] });
+      })();
 
-  // 3b) Estimate MVP cost
-  if (idea) {
-    try {
-      console.log(`[generateReportForSession] Running MVP cost estimation...`);
-      costEstimate = await estimateMvpCostViaLLM({
-        idea,
-        industry,
-        productType,
-        targetCustomer,
-        teamSize,
-        hoursPerWeek,
-      });
-      console.log(`[generateReportForSession] MVP cost estimate: $${costEstimate?.cost_mid_usd}`);
-    } catch (e: any) {
-      costEstimate = null;
-      mvpCostEstimateError = e?.message || "Failed to estimate MVP cost";
-      console.error("[generateReportForSession] MVP cost error:", mvpCostEstimateError);
-    }
-  } else {
-    console.log("[generateReportForSession] Skipping MVP cost (missing idea)");
-  }
+  const mvpCostPromise = idea
+    ? (() => {
+        console.log(`[generateReportForSession] Running MVP cost estimation...`);
+        return estimateMvpCostViaLLM({
+          idea,
+          industry,
+          productType,
+          targetCustomer,
+          teamSize,
+          hoursPerWeek,
+        });
+      })()
+    : (() => {
+        console.log("[generateReportForSession] Skipping MVP cost (missing idea)");
+        return Promise.resolve(null);
+      })();
 
-  // 3c) Estimate market size
   console.log(`[generateReportForSession] Running market size estimation...`);
-  try {
-    marketSize = await estimateMarketSizeLLM({
-      idea,
-      problem,
-      targetCustomer,
-      industry,
-      competitors: competitors.map((c) => ({ name: c.name })),
-    });
-    console.log(`[generateReportForSession] Market size confidence: ${marketSize?.confidence ?? "N/A"}`);
-  } catch (e: any) {
-    console.error("[generateReportForSession] Market size error:", e?.message);
-    marketSize = null;
+  const marketSizePromise = estimateMarketSizeLLM({
+    idea,
+    problem,
+    targetCustomer,
+    industry,
+    // Step 2: market size no longer waits on competitor lookup.
+    competitors: [],
+  });
+
+  console.log(`[generateReportForSession] Running things needed generation...`);
+  const thingsNeededPromise = computeThingsNeededLLM({
+    idea,
+    productType,
+    targetCustomer,
+    industry,
+    problem,
+    skillsRaw: rawInputs.skills ?? null,
+    teamSize,
+    hours: hoursPerWeek,
+  });
+
+  const [competitorResult, mvpCostResult, marketSizeResult, thingsNeededResult] =
+    await Promise.allSettled([
+      competitorPromise,
+      mvpCostPromise,
+      marketSizePromise,
+      thingsNeededPromise,
+    ]);
+
+  if (competitorResult.status === "fulfilled") {
+    competitors = competitorResult.value.competitors ?? [];
+    console.log(`[generateReportForSession] Found ${competitors.length} competitors`);
+  } else {
+    competitorError = errorMessage(competitorResult.reason, "Competitor search failed");
+    competitors = [];
+    console.error("[generateReportForSession] Competitor search error:", competitorError);
   }
 
-  // 3d) Generate things needed via LLM
-  console.log(`[generateReportForSession] Running things needed generation...`);
-  try {
-    thingsNeeded = await computeThingsNeededLLM({
-      idea,
-      productType,
-      targetCustomer,
-      industry,
-      problem,
-      skillsRaw: rawInputs.skills ?? null,
-      teamSize,
-      hours: hoursPerWeek,
-    });
+  if (mvpCostResult.status === "fulfilled") {
+    costEstimate = mvpCostResult.value;
+    if (costEstimate) {
+      console.log(`[generateReportForSession] MVP cost estimate: $${costEstimate.cost_mid_usd}`);
+    }
+  } else {
+    costEstimate = null;
+    mvpCostEstimateError = errorMessage(mvpCostResult.reason, "Failed to estimate MVP cost");
+    console.error("[generateReportForSession] MVP cost error:", mvpCostEstimateError);
+  }
+
+  if (marketSizeResult.status === "fulfilled") {
+    marketSize = marketSizeResult.value;
+    console.log(`[generateReportForSession] Market size confidence: ${marketSize?.confidence ?? "N/A"}`);
+  } else {
+    marketSize = null;
+    console.error("[generateReportForSession] Market size error:", errorMessage(marketSizeResult.reason, "Market size failed"));
+  }
+
+  if (thingsNeededResult.status === "fulfilled") {
+    thingsNeeded = thingsNeededResult.value;
     console.log(`[generateReportForSession] Things needed: ${thingsNeeded?.needs.length ?? 0} needs`);
-  } catch (e: any) {
-    console.error("[generateReportForSession] Things needed error:", e?.message);
+  } else {
     thingsNeeded = null;
+    console.error("[generateReportForSession] Things needed error:", errorMessage(thingsNeededResult.reason, "Things needed failed"));
   }
 
   // 4) Build the report
@@ -178,11 +202,6 @@ export async function generateReportForSession(
     marketSize,
     thingsNeeded,
   });
-
-  // Ensure version is set
-  if (report) {
-    (report as any).version = REPORT_VERSION;
-  }
 
   // 5) Persist to signup_reports (upsert)
   const updatedAt = new Date().toISOString();
