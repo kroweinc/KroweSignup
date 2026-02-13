@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Info,
   Clock,
@@ -221,7 +222,18 @@ function ExpandableText({
 }
 
 export function ReportDashboard({ report, status }: ReportDashboardProps) {
+  const router = useRouter();
   const data = report?.data;
+
+  useEffect(() => {
+    if (status !== "processing") return;
+
+    const poll = window.setInterval(() => {
+      router.refresh();
+    }, 2500);
+
+    return () => window.clearInterval(poll);
+  }, [status, router]);
 
   if (status !== "ready" || !data) {
     return (
@@ -232,6 +244,11 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               ? "Report is still generating."
               : "Report not available."}
           </p>
+          {status === "processing" && (
+            <p className="text-xs text-gray-500 mt-2">
+              Auto-refreshing every few seconds.
+            </p>
+          )}
         </div>
       </main>
     );
