@@ -17,7 +17,11 @@ import { mapSignupInputsToReportInputs } from "./mapSignupInputsToReportInputs";
 import { buildReportFromPayload } from "./buildReport";
 import { findCompetitorsViaWeb, type Competitor } from "./findCompetitors";
 import { estimateMvpCostViaLLM, type MvpCostEstimate } from "./estimateMvpCost";
-import { estimateMarketSizeLLM, type MarketSizeLLM } from "./marketsize";
+import {
+  estimateMarketSizeLLMWithMetrics,
+  type MarketSizeLLM,
+  type MarketSizeTimings,
+} from "./marketsize";
 import { computeThingsNeededLLM, type ThingsNeededResult } from "./thingsNeeded";
 
 export type GenerateReportOptions = {
@@ -60,6 +64,32 @@ async function runTimedTask<T>(name: string, task: () => Promise<T>): Promise<Ti
     console.warn(`[generateReportForSession] ${name} failed in ${durationMs}ms`);
     return { status: "rejected", reason, durationMs };
   }
+}
+
+type MarketSizePathResult = {
+  marketSize: MarketSizeLLM | null;
+  timings: MarketSizeTimings;
+};
+
+async function runMarketSizePath(params: {
+  idea: string | null;
+  problem: string | null;
+  targetCustomer: string | null;
+  industry: string | null;
+}): Promise<MarketSizePathResult> {
+  const v1Input = {
+    idea: params.idea,
+    problem: params.problem,
+    targetCustomer: params.targetCustomer,
+    industry: params.industry,
+    competitors: [],
+  };
+
+  const v1 = await estimateMarketSizeLLMWithMetrics(v1Input);
+  return {
+    marketSize: v1.result,
+    timings: v1.timings,
+  };
 }
 
 /**
@@ -158,13 +188,11 @@ export async function generateReportForSession(
       });
     }),
     runTimedTask("Market size estimation", async () =>
-      estimateMarketSizeLLM({
+      runMarketSizePath({
         idea,
         problem,
         targetCustomer,
         industry,
-        // Step 2: market size no longer waits on competitor lookup.
-        competitors: [],
       })
     ),
     runTimedTask("Things needed generation", async () =>
@@ -214,10 +242,15 @@ export async function generateReportForSession(
   }
 
   if (marketSizeResult.status === "fulfilled") {
-    marketSize = marketSizeResult.value;
+    marketSize = marketSizeResult.value.marketSize;
     console.log(
-      `[generateReportForSession] Market size available: ${marketSize !== null} (${marketSizeResult.durationMs}ms)`
+      `[generateReportForSession] Market size available=${marketSize !== null} (${marketSizeResult.durationMs}ms)`
     );
+    console.log(`[marketSize] total_market_size_ms=${marketSizeResult.value.timings.total_market_size_ms}`);
+    console.log(`[marketSize] prompt_build_ms=${marketSizeResult.value.timings.prompt_build_ms}`);
+    console.log(`[marketSize] llm_request_ms=${marketSizeResult.value.timings.llm_request_ms}`);
+    console.log(`[marketSize] parse_ms=${marketSizeResult.value.timings.parse_ms}`);
+    console.log(`[marketSize] retries=${marketSizeResult.value.timings.retries}`);
   } else {
     marketSize = null;
     console.error(
@@ -259,17 +292,17 @@ export async function generateReportForSession(
   const updatedAt = new Date().toISOString();
   const saveReportStartedAt = Date.now();
 
+  // Single write payload: avoid partial field-by-field updates.
+  const reportUpsertPayload = {
+    session_id: sessionId,
+    status: "ready",
+    report,
+    updated_at: updatedAt,
+  };
+
   const { data: upserted, error: upsertError } = await supabase
     .from("signup_reports")
-    .upsert(
-      {
-        session_id: sessionId,
-        status: "ready",
-        report,
-        updated_at: updatedAt,
-      },
-      { onConflict: "session_id" }
-    )
+    .upsert(reportUpsertPayload, { onConflict: "session_id" })
     .select("id")
     .single();
 
@@ -278,8 +311,10 @@ export async function generateReportForSession(
     throw new Error(`Failed to save report: ${upsertError.message}`);
   }
 
+  const dbWriteMs = Date.now() - saveReportStartedAt;
+  console.log(`[marketSize] db_write_ms=${dbWriteMs}`);
   console.log(
-    `[generateReportForSession] Report saved in ${Date.now() - saveReportStartedAt}ms (reason: ${reason})`
+    `[generateReportForSession] Report saved in ${dbWriteMs}ms (reason: ${reason})`
   );
 
   // Debug log for enrichment verification
