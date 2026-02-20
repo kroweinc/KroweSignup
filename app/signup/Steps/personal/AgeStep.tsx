@@ -73,7 +73,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
                 inputMode="numeric"
                 value={age === 0 ? '' : age.toString()}
                 onChange={handleAgeChange}
-                className="text-7xl md:text-8xl font-light text-center text-black bg-transparent border-none outline-none w-full max-w-[200px] placeholder:text-muted-foreground/60 transition-colors"
+                className="text-7xl md:text-8xl font-light text-center text-black bg-transparent border-none outline-none w-full max-w-[200px] placeholder:text-muted-foreground/30 transition-colors"
                 placeholder="18"
               />
 
