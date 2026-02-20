@@ -2,6 +2,8 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { RefreshReportButton } from "./RefreshReportButton";
 import { ReportDashboard } from "./ReportDashboard";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReportPage({
   params,
 }: {

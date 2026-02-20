@@ -55,6 +55,13 @@ interface ReportDataForUI {
     confidence_0_1: number;
     recommended_mvp_scope?: string;
   } | null;
+  costEstimate?: {
+    cost_low_usd: number;
+    cost_high_usd: number;
+    cost_efficiency_score_0_1: number;
+    confidence_0_1: number;
+    recommended_mvp_scope?: string;
+  } | null;
   marketSize?: {
     planning_market_size_usd_range?: { low: number; high: number };
     planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
@@ -258,7 +265,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
   const inputs = data.inputsSnapshot ?? {};
   const marketSize = data.marketSize ?? null;
   const timeToMvp = data.timeToMvp;
-  const mvpCost = data.mvpCostEstimate;
+  const mvpCost = data.mvpCostEstimate ?? data.costEstimate ?? null;
   const founderFit = data.founderFit;
   const startupAdvantage = data.startupAdvantage;
   const competitors = data.competitors ?? [];

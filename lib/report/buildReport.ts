@@ -387,8 +387,8 @@ export function buildReportFromPayload(payload: SignupPayload, opts?: { competit
       founderFit: ffs ?? undefined,
       //startup advantage score here
       startupAdvantage: sas ?? undefined,
-      //mvp cost estimate
-      mvpCostEstimate: costEstimate ?? undefined,
+      //mvp cost estimate (use null not undefined so it survives JSON serialization)
+      mvpCostEstimate: costEstimate ?? null,
       mvpCostEstimateError: opts?.mvpCostEstimateError,
 
       //sas score
