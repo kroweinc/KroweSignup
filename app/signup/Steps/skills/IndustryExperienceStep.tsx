@@ -62,7 +62,7 @@ export default function IndustryExperienceStep({
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   Auto-saved
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <button
                     type="button"
                     onClick={onBack}

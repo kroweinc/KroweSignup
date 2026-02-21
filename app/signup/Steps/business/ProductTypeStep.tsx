@@ -126,7 +126,7 @@ export default function ProductTypeStep({
               </div>
             </label>
           </div>
-          <div className="flex items-center justify-between w-full max-w-5xl border-t border-gray-100 pt-8">
+          <div className="flex items-center justify-end gap-5 w-full max-w-5xl border-t border-gray-100 pt-8">
             <button
               type="button"
               onClick={onBack}

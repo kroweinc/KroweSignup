@@ -189,7 +189,7 @@ export default function IndustryStep({
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+            <div className="mt-6 flex items-center justify-end gap-5 border-t border-gray-100 pt-4">
               {onBack != null && (
                 <button
                   type="button"

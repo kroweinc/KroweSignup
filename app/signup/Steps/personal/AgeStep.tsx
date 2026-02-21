@@ -81,7 +81,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
                 <span className="text-sm text-muted-foreground">Auto-saved</span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-5">
                 <button
                   type="button"
                   onClick={onBack}

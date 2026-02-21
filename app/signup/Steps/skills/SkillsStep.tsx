@@ -216,7 +216,7 @@ export default function SkillsStep({
               </div>
             </div>
 
-            <div className="mt-10 flex items-center justify-end gap-4 border-t border-gray-100 pt-6">
+            <div className="mt-10 flex items-center justify-end gap-5 border-t border-gray-100 pt-6">
               {onBack != null && (
                 <button
                   type="button"
