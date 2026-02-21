@@ -37,13 +37,20 @@ export default function TargetCustomerStep({
                 Great startups are built for specific people. Identify the unique group of individuals who desperately need your solution.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200/60 space-y-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-orange-500" /> Structure Tip
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Use this template: <br />
-                <span className="text-gray-900 font-semibold">&quot;Our target customer is a [age range] [type of person], currently [specific situation], who cares about [their priority], and is looking for [specific outcome]&quot;</span>
+            {/* Structure Hint Box */}
+            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Use this structure
+                </span>
+              </div>
+              <p className="font-mono text-sm text-black leading-relaxed">
+                &quot;Our target customer is a <span className="text-[#f97316]">[age range]</span>{' '}
+                <span className="text-[#f97316]">[type of person]</span>, currently{' '}
+                <span className="text-[#f97316]">[specific situation]</span>, who cares about{' '}
+                <span className="text-[#f97316]">[their priority]</span>, and is looking for{' '}
+                <span className="text-[#f97316]">[specific outcome]</span>&quot;
               </p>
             </div>
           </div>
@@ -86,7 +93,7 @@ export default function TargetCustomerStep({
           </div>
         </div>
         {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4 w-full flex justify-center">
+        <footer className="px-6 pt-10 pb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Lock className="w-4 h-4" />
             <span>Your intellectual property is private and encrypted.</span>
