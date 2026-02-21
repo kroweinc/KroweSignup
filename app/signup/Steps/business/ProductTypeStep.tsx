@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type ProductType = 'mobile' | 'web' | 'both' | 'other'
@@ -138,10 +139,10 @@ export default function ProductTypeStep({
               type="button"
               onClick={onContinue}
               disabled={!value}
-              className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-semibold text-white transition-all duration-300 bg-gray-900 rounded-lg hover:bg-primary-600 hover:shadow-lg hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:pointer-events-none"
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
-              <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
