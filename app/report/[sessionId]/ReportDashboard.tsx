@@ -18,6 +18,7 @@ import {
   formatMvpCostRange,
   parseMvpScopeList,
 } from "@/lib/report/formatReportForUI";
+import { ProgressScreen } from "./ProgressScreen";
 
 // Minimal type for report payload the Dashboard expects (matches stored report.data)
 interface ReportDataForUI {
@@ -244,19 +245,14 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
   }, [status, router]);
 
   if (status !== "ready" || !data) {
+    if (status === "processing") {
+      return <ProgressScreen />;
+    }
+
     return (
       <main className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-gray-600">
-            {status === "processing"
-              ? "Report is still generating."
-              : "Report not available."}
-          </p>
-          {status === "processing" && (
-            <p className="text-xs text-gray-500 mt-2">
-              Auto-refreshing every few seconds.
-            </p>
-          )}
+          <p className="text-gray-600">Report not available.</p>
         </div>
       </main>
     );
