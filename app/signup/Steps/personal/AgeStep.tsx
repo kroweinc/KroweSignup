@@ -1,7 +1,7 @@
 'use client'
 
 import type { ChangeEvent } from 'react';
-import { ArrowRight, Lock, User } from 'lucide-react';
+import { ArrowRight, User } from 'lucide-react';
 import SignupStepLayout from '../SignupStepLayout';
 
 type AgeStepProps = {
@@ -44,21 +44,16 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
               We tailor the Krowe incubator experience to different life stages. Your age helps us match you with the right peer cohort.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-5 max-w-sm">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3 max-w-sm">
+              <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   Privacy Note
                 </span>
               </div>
-              <p className="text-sm text-black leading-relaxed">
-                This information is kept private and is only used for internal matching algorithms and cohort assignment.
+              <p className="font-mono text-sm text-black leading-relaxed">
+                This information is kept <span className="text-[#f97316]">private</span> and is only used for us to understand how fit you are for your idea.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Lock className="w-4 h-4" />
-              <span className="text-sm">Your personal data is encrypted and secure.</span>
             </div>
           </div>
 
@@ -73,7 +68,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
                 inputMode="numeric"
                 value={age === 0 ? '' : age.toString()}
                 onChange={handleAgeChange}
-                className="text-7xl md:text-8xl font-light text-center text-black bg-transparent border-none outline-none w-full max-w-[200px] placeholder:text-muted-foreground/60 transition-colors"
+                className="text-7xl md:text-8xl font-light text-center text-black bg-transparent border-none outline-none w-full max-w-[200px] placeholder:text-muted-foreground/30 transition-colors"
                 placeholder="18"
               />
 
@@ -86,7 +81,7 @@ export default function AgeStep({ value, onChange, onBack, onContinue, progressP
                 <span className="text-sm text-muted-foreground">Auto-saved</span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-5">
                 <button
                   type="button"
                   onClick={onBack}

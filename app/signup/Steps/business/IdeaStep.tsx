@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Lightbulb, Lock } from 'lucide-react'
+import { ArrowRight, Lightbulb } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type IdeaStepProps = {
@@ -75,7 +75,7 @@ export default function IdeaStep({
                 <span>Auto-saved</span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-5">
                 <button
                   type="button"
                   onClick={onBack}
@@ -87,7 +87,7 @@ export default function IdeaStep({
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue}
-                  className="flex items-center gap-2 bg-[#f97316] hover:bg-[#ea580c] text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -96,14 +96,6 @@ export default function IdeaStep({
             </div>
           </div>
         </div>
-
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
       </div>
     </SignupStepLayout>
   )

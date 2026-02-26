@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Info,
   Clock,
@@ -17,6 +18,7 @@ import {
   formatMvpCostRange,
   parseMvpScopeList,
 } from "@/lib/report/formatReportForUI";
+import { ProgressScreen } from "./ProgressScreen";
 
 // Minimal type for report payload the Dashboard expects (matches stored report.data)
 interface ReportDataForUI {
@@ -54,12 +56,20 @@ interface ReportDataForUI {
     confidence_0_1: number;
     recommended_mvp_scope?: string;
   } | null;
+  costEstimate?: {
+    cost_low_usd: number;
+    cost_high_usd: number;
+    cost_efficiency_score_0_1: number;
+    confidence_0_1: number;
+    recommended_mvp_scope?: string;
+  } | null;
   marketSize?: {
-    market_definition?: string;
+    planning_market_size_usd_range?: { low: number; high: number };
+    planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
     tam_usd_range?: { low: number; high: number };
     sam_usd_range?: { low: number; high: number };
+    initial_wedge_usd_range?: { low: number; high: number };
     wedge_sam_usd_range?: { low: number; high: number };
-    planning_year_1?: { target_revenue_usd?: { low: number; high: number } };
   } | null;
   competitors?: Array<{ name: string; url?: string; evidence?: string; why_competitor?: string }>;
   thingsNeed?: { needs: Array<{ title: string; why?: string }> };
@@ -93,9 +103,9 @@ function Tooltip({
   return (
     <div className="relative group inline-flex">
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-foreground text-background text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-64 text-center z-50 pointer-events-none">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-64 text-center z-50 pointer-events-none">
         {content}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
       </div>
     </div>
   );
@@ -205,7 +215,7 @@ function ExpandableText({
 
   return (
     <div className="text-sm">
-      <span className="text-muted-foreground">{label}: </span>
+      <span className="text-gray-600">{label}: </span>
       <span className="text-black">{expanded ? text : truncated}</span>
       {text.length > 60 && (
         <button
@@ -221,17 +231,28 @@ function ExpandableText({
 }
 
 export function ReportDashboard({ report, status }: ReportDashboardProps) {
+  const router = useRouter();
   const data = report?.data;
 
+  useEffect(() => {
+    if (status !== "processing") return;
+
+    const poll = window.setInterval(() => {
+      router.refresh();
+    }, 2500);
+
+    return () => window.clearInterval(poll);
+  }, [status, router]);
+
   if (status !== "ready" || !data) {
+    if (status === "processing") {
+      return <ProgressScreen />;
+    }
+
     return (
       <main className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-muted-foreground">
-            {status === "processing"
-              ? "Report is still generating."
-              : "Report not available."}
-          </p>
+          <p className="text-gray-600">Report not available.</p>
         </div>
       </main>
     );
@@ -240,7 +261,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
   const inputs = data.inputsSnapshot ?? {};
   const marketSize = data.marketSize ?? null;
   const timeToMvp = data.timeToMvp;
-  const mvpCost = data.mvpCostEstimate;
+  const mvpCost = data.mvpCostEstimate ?? data.costEstimate ?? null;
   const founderFit = data.founderFit;
   const startupAdvantage = data.startupAdvantage;
   const competitors = data.competitors ?? [];
@@ -265,7 +286,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
           <h1 className="text-2xl md:text-3xl font-semibold text-black tracking-tight">
             Krowe Pre-Seed Advisor Report
           </h1>
-          <p className="text-muted-foreground mt-1">Startup readiness analysis</p>
+          <p className="text-gray-600 mt-1">Startup readiness analysis</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 md:gap-6">
@@ -275,17 +296,17 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-black">Market Size</h2>
-                  <Tooltip content={marketSize?.market_definition ?? "Market definition not available."}>
+                  <Tooltip content="Estimated market sizes for planning, TAM, SAM, and initial wedge.">
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-black transition-colors"
+                      className="text-gray-500 hover:text-black transition-colors"
                       aria-label="Market definition info"
                     >
                       <Info className="w-4 h-4" />
                     </button>
                   </Tooltip>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className="text-sm text-gray-600 mt-0.5">
                   {inputs.industry ?? "—"}
                 </p>
               </div>
@@ -293,31 +314,41 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             </div>
 
             <div className="mb-8">
-              <p className="text-sm text-muted-foreground mb-1">Planning Market Size</p>
+              <p className="text-sm text-gray-600 mb-1">Planning Market Size</p>
               <p className="text-5xl md:text-6xl font-bold text-black tracking-tight">
                 {marketSize
-                  ? formatPlanningYear1(marketSize.planning_year_1)
+                  ? formatPlanningYear1({
+                      planning_market_size_usd_range:
+                        marketSize.planning_market_size_usd_range,
+                      target_revenue_usd:
+                        marketSize.planning_year_1?.target_revenue_usd,
+                    })
                   : "—"}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">TAM</p>
+                <p className="text-xs text-gray-600 mb-1">TAM</p>
                 <p className="text-lg font-semibold text-black">
                   {marketSize ? formatUsdRange(marketSize.tam_usd_range) : "—"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">SAM</p>
+                <p className="text-xs text-gray-600 mb-1">SAM</p>
                 <p className="text-lg font-semibold text-black">
                   {marketSize ? formatUsdRange(marketSize.sam_usd_range) : "—"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Initial Wedge</p>
+                <p className="text-xs text-gray-600 mb-1">Initial Wedge</p>
                 <p className="text-lg font-semibold text-black">
-                  {marketSize ? formatUsdRange(marketSize.wedge_sam_usd_range) : "—"}
+                  {marketSize
+                    ? formatUsdRange(
+                        marketSize.initial_wedge_usd_range ??
+                          marketSize.wedge_sam_usd_range
+                      )
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -332,7 +363,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             <p className="text-4xl md:text-5xl font-bold text-black tracking-tight mb-2">
               {timeToMvp?.label ?? "—"}
             </p>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               {timeToMvp?.rationale ?? "—"}
             </p>
             <ProgressBar value={timeProgress} className="mt-auto" />
@@ -352,7 +383,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             {mvpCost && (
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">Cost efficiency</p>
+                  <p className="text-xs text-gray-600">Cost efficiency</p>
                   <div className="flex items-center gap-2">
                     <ProgressBar
                       value={Math.round(mvpCost.cost_efficiency_score_0_1 * 100)}
@@ -364,7 +395,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">Confidence</p>
+                  <p className="text-xs text-gray-600">Confidence</p>
                   <span className="text-xs px-2 py-1 bg-[#F2F2F2] text-[#525252] rounded-full">
                     {Math.round(mvpCost.confidence_0_1 * 100)}% score
                   </span>
@@ -382,14 +413,14 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   <Tooltip content="Founder Fit Score measures alignment between founder capabilities and startup requirements.">
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-black transition-colors"
+                      className="text-gray-500 hover:text-black transition-colors"
                       aria-label="Founder fit info"
                     >
                       <Info className="w-4 h-4" />
                     </button>
                   </Tooltip>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   {founderFit?.category ?? "—"}
                 </p>
               </div>
@@ -397,28 +428,28 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             </div>
             {founderFit?.components && (
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Breakdown</p>
+                <p className="text-sm text-gray-600 mb-2">Breakdown</p>
                 <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Skill Score</span>
+                  <span className="text-gray-600">Skill Score</span>
                   <span className="font-medium text-black">
                     {Math.round(founderFit.components.skill * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Industry Familiarity</span>
+                  <span className="text-gray-600">Industry Familiarity</span>
                   <span className="font-medium text-black">
                     {Math.round(founderFit.components.industry * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Age Factor</span>
+                  <span className="text-gray-600">Age Factor</span>
                   <span className="font-medium text-black">
                     {Math.round(founderFit.components.age * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cost Alignment</span>
+                  <span className="text-gray-600">Cost Alignment</span>
                   <span className="font-medium text-black">
                     {Math.round(founderFit.components.cost * 100)}%
                   </span>
@@ -437,7 +468,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   <Tooltip content="Startup Advantage Score evaluates competitive positioning based on multiple factors.">
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-black transition-colors"
+                      className="text-gray-500 hover:text-black transition-colors"
                       aria-label="Startup advantage info"
                     >
                       <Info className="w-4 h-4" />
@@ -452,34 +483,34 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
             </div>
             {startupAdvantage?.components && (
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Breakdown</p>
+                <p className="text-sm text-gray-600 mb-2">Breakdown</p>
                 <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Skill</span>
+                  <span className="text-gray-600">Skill</span>
                   <span className="font-medium text-black">
                     {Math.round(startupAdvantage.components.skill * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Age</span>
+                  <span className="text-gray-600">Age</span>
                   <span className="font-medium text-black">
                     {Math.round(startupAdvantage.components.age * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cost Efficiency</span>
+                  <span className="text-gray-600">Cost Efficiency</span>
                   <span className="font-medium text-black">
                     {Math.round(startupAdvantage.components.costEff * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Product Type</span>
+                  <span className="text-gray-600">Product Type</span>
                   <span className="font-medium text-black">
                     {Math.round(startupAdvantage.components.productType * 100)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Industry</span>
+                  <span className="text-gray-600">Industry</span>
                   <span className="font-medium text-black">
                     {Math.round(startupAdvantage.components.industry * 100)}%
                   </span>
@@ -501,19 +532,19 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 <p className="text-2xl font-bold text-black">
                   {inputs.age != null ? String(inputs.age) : "—"}
                 </p>
-                <p className="text-xs text-muted-foreground">Age</p>
+                <p className="text-xs text-gray-600">Age</p>
               </div>
               <div className="text-center p-3 bg-[#F8F8F8] rounded-lg">
                 <p className="text-2xl font-bold text-black">
                   {inputs.teamSize != null ? String(inputs.teamSize) : "—"}
                 </p>
-                <p className="text-xs text-muted-foreground">Team</p>
+                <p className="text-xs text-gray-600">Team</p>
               </div>
               <div className="text-center p-3 bg-[#F8F8F8] rounded-lg">
                 <p className="text-lg font-bold text-black">
                   {inputs.hours != null ? `${inputs.hours}h` : "—"}
                 </p>
-                <p className="text-xs text-muted-foreground">/week</p>
+                <p className="text-xs text-gray-600">/week</p>
               </div>
             </div>
 
@@ -557,11 +588,11 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                           ? `${Math.round(skills.overall * 100)}%`
                           : "—"}
                       </p>
-                      <p className="text-sm text-muted-foreground">Overall Skill Score</p>
+                      <p className="text-sm text-gray-600">Overall Skill Score</p>
                     </div>
                   )}
                   {skills && industryResult && (
-                    <div className="h-12 w-px bg-border" />
+                    <div className="h-12 w-px bg-gray-200" />
                   )}
                   {industryResult && (
                     <div>
@@ -570,7 +601,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                           ? `${Math.round(industryResult.score * 100)}%`
                           : "—"}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-600">
                         Industry Familiarity ({industryResult.level})
                       </p>
                     </div>
@@ -592,7 +623,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                           className={cn(
                             "text-xs px-3 py-1.5 rounded-full font-medium",
                             level === "None" || level === "Unknown"
-                              ? "bg-muted text-muted-foreground"
+                              ? "bg-gray-100 text-gray-600"
                               : "bg-orange-500/10 text-orange-500"
                           )}
                         >
@@ -603,7 +634,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   </div>
                 )}
 
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   <span className="font-medium text-black">Evidence:</span>{" "}
                   {industryResult?.evidence?.length
                     ? industryResult.evidence[0]
@@ -611,7 +642,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                 </p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600">
                 Skills and industry data not available for this report.
               </p>
             )}
@@ -635,7 +666,7 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   </label>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">No items available.</p>
+                <p className="text-sm text-gray-600">No items available.</p>
               )}
             </div>
           </DashboardCard>
@@ -664,13 +695,13 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                         competitor.name
                       )}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-600">
                       {competitor.evidence ?? competitor.why_competitor ?? "—"}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground col-span-full">
+                <p className="text-sm text-gray-600 col-span-full">
                   No competitors data available.
                 </p>
               )}
@@ -693,11 +724,11 @@ export function ReportDashboard({ report, status }: ReportDashboardProps) {
                   </span>
                 ))
               ) : mvpCost?.recommended_mvp_scope ? (
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-gray-600">
                   {mvpCost.recommended_mvp_scope}
                 </span>
               ) : (
-                <p className="text-sm text-muted-foreground">No scope available.</p>
+                <p className="text-sm text-gray-600">No scope available.</p>
               )}
             </div>
           </DashboardCard>

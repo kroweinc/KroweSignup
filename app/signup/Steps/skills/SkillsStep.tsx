@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type SkillId = 'dev' | 'marketing' | 'leadership' | 'other' | 'none'
@@ -112,10 +113,6 @@ export default function SkillsStep({
                 resources and potential co-founders.
               </p>
             </div>
-            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-base">lock</span>
-              <span>Your data is confidential.</span>
-            </div>
           </div>
 
           {/* Right column */}
@@ -219,7 +216,7 @@ export default function SkillsStep({
               </div>
             </div>
 
-            <div className="mt-10 flex items-center justify-end gap-4 border-t border-gray-100 pt-6">
+            <div className="mt-10 flex items-center justify-end gap-5 border-t border-gray-100 pt-6">
               {onBack != null && (
                 <button
                   type="button"
@@ -233,18 +230,11 @@ export default function SkillsStep({
                 type="button"
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="group relative inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 bg-orange-500 rounded-lg hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:pointer-events-none"
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
-                <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">
-                  arrow_forward
-                </span>
+                <ArrowRight className="w-4 h-4" />
               </button>
-            </div>
-
-            <div className="lg:hidden flex items-center justify-center gap-2 text-xs text-gray-400 mt-6 mb-8">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Private and secure.</span>
             </div>
           </div>
         </div>

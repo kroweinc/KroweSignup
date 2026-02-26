@@ -7,20 +7,75 @@ import type { GenerateReportRequest } from "@/lib/types/api";
 type Body = GenerateReportRequest;
 
 const CURRENT_VERSION = REPORT_VERSION;
+const PROCESSING_STALE_MS = 10 * 60 * 1000;
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function elapsedMs(startedAt: number): number {
+  return Date.now() - startedAt;
+}
+
+function logGenerateRoute(sessionId: string, requestStartedAt: number, message: string) {
+  console.log(`[generate] ${message} (sessionId=${sessionId}, elapsedMs=${elapsedMs(requestStartedAt)})`);
+}
+
+async function markReportFailed(sessionId: string, error: unknown) {
+  const supabase = createServerSupabaseClient();
+  const message = getErrorMessage(error, "Report generation failed");
+
+  const { error: updateErr } = await supabase
+    .from("signup_reports")
+    .upsert(
+      {
+        session_id: sessionId,
+        status: "failed",
+        report: { version: CURRENT_VERSION, error: message },
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "session_id" }
+    );
+
+  if (updateErr) {
+    console.error("[generate] Failed to mark report as failed:", updateErr);
+  }
+}
+
+function enqueueReportGeneration(sessionId: string) {
+  const backgroundStartedAt = Date.now();
+  console.log(`[generate] Background report generation started (sessionId=${sessionId})`);
+
+  void generateReportForSession(sessionId, { reason: "generate" })
+    .then((result) => {
+      console.log(
+        `[generate] Background report generation completed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${result.updatedAt})`
+      );
+    })
+    .catch(async (error: unknown) => {
+      console.error(
+        `[generate] Background report generation failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+        error
+      );
+      await markReportFailed(sessionId, error);
+    });
+}
 
 export async function POST(req: Request) {
   const supabase = createServerSupabaseClient();
+  const requestStartedAt = Date.now();
   const body = (await req.json()) as Body;
 
   const sessionId = (body.sessionId || "").trim();
   if (!sessionId) {
+    console.log(`[generate] Missing sessionId (elapsedMs=${elapsedMs(requestStartedAt)})`);
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
   }
 
   // 1) If report exists, check status and version
   const { data: existing, error: exErr } = await supabase
     .from("signup_reports")
-    .select("id, status, report")
+    .select("id, status, report, updated_at")
     .eq("session_id", sessionId)
     .maybeSingle();
 
@@ -33,31 +88,39 @@ export async function POST(req: Request) {
   const isCurrent = existingVersion === CURRENT_VERSION;
   const isReady = existing?.status === "ready";
   const isProcessing = existing?.status === "processing";
+  const lastUpdatedMs = existing?.updated_at ? Date.parse(existing.updated_at) : NaN;
+  const isStaleProcessing =
+    isProcessing &&
+    Number.isFinite(lastUpdatedMs) &&
+    Date.now() - lastUpdatedMs > PROCESSING_STALE_MS;
 
   // If it's already done (ready) and version matches, return it
   if (existing?.id && isCurrent && isReady) {
-    return NextResponse.json({ ok: true, reportId: existing.id, sessionId });
+    logGenerateRoute(sessionId, requestStartedAt, "Returning existing ready report");
+    return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "ready" });
   }
 
-  // If it's currently processing (and version matches or we just trust the lock), return wait signal
-  // For now, we return the reportId which allows the client to poll or wait
-  if (existing?.id && isProcessing && isCurrent) {
-    return NextResponse.json({ ok: true, reportId: existing.id, sessionId });
+  // If it's currently processing and not stale, return immediately.
+  if (existing?.id && isProcessing && isCurrent && !isStaleProcessing) {
+    logGenerateRoute(sessionId, requestStartedAt, "Report already processing, returning immediately");
+    return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "processing" });
   }
 
-  // Define a flag to know if we inserted a placeholder
-  let didInsertPlaceholder = false;
+  let reportId = existing?.id;
 
   // If no report exists, try to INSERT a 'processing' placeholder.
   // We use INSERT (not upsert) to let the database handle race conditions via unique constraint on session_id.
   if (!existing?.id) {
-    const { error: insertErr } = await supabase
+    const { data: inserted, error: insertErr } = await supabase
       .from("signup_reports")
       .insert({
         session_id: sessionId,
         status: "processing",
         report: { version: CURRENT_VERSION }, // placeholder with version
-      });
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
     if (insertErr) {
       // If error is unique constraint violation, it means another request just started it.
@@ -65,45 +128,49 @@ export async function POST(req: Request) {
       if (insertErr.code === "23505") { // Postgres unique_violation code
         const { data: racer } = await supabase
           .from("signup_reports")
-          .select("id")
+          .select("id, status")
           .eq("session_id", sessionId)
           .single();
-        return NextResponse.json({ ok: true, reportId: racer?.id, sessionId });
+
+        return NextResponse.json({
+          ok: true,
+          reportId: racer?.id,
+          sessionId,
+          status: racer?.status ?? "processing",
+        });
       } else {
+        logGenerateRoute(sessionId, requestStartedAt, "Insert failed while creating processing placeholder");
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
     }
-    didInsertPlaceholder = true;
-  }
-  // If it exists but is old version (legacy/outdated), we proceed to regenerate (overwrite).
-  // Note: Race condition still possible here for *updates*, but less critical than initial creation.
+    reportId = inserted?.id;
+    logGenerateRoute(sessionId, requestStartedAt, "Inserted processing placeholder");
+  } else if (!isReady || !isCurrent || isStaleProcessing) {
+    // Existing row is stale/outdated/incomplete - reset to processing and regenerate.
+    const { error: updateErr } = await supabase
+      .from("signup_reports")
+      .update({
+        status: "processing",
+        report: { version: CURRENT_VERSION },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("session_id", sessionId);
 
-  // 2) Generate report using shared pipeline (includes all LLM enrichment)
-  try {
-    const result = await generateReportForSession(sessionId, { reason: "generate" });
-
-    // Fetch the report ID if we didn't get it from the result
-    let reportId = result.reportId;
-    if (!reportId) {
-      const { data: freshReport } = await supabase
-        .from("signup_reports")
-        .select("id")
-        .eq("session_id", sessionId)
-        .single();
-      reportId = freshReport?.id;
+    if (updateErr) {
+      logGenerateRoute(sessionId, requestStartedAt, "Failed to reset report to processing");
+      return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
-
-    return NextResponse.json({
-      ok: true,
-      reportId: reportId ?? existing?.id,
-      sessionId,
-      updatedAt: result.updatedAt,
-    });
-  } catch (error: any) {
-    console.error("[generate] Report generation failed:", error);
-    return NextResponse.json(
-      { error: error?.message || "Report generation failed" },
-      { status: 500 }
-    );
+    logGenerateRoute(sessionId, requestStartedAt, "Reset existing report to processing");
   }
+
+  // 2) Kick off generation in background and return immediately.
+  enqueueReportGeneration(sessionId);
+  logGenerateRoute(sessionId, requestStartedAt, "Enqueued background generation and returning processing");
+
+  return NextResponse.json({
+    ok: true,
+    reportId: reportId ?? existing?.id,
+    sessionId,
+    status: "processing",
+  });
 }

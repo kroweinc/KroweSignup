@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { Lock } from 'lucide-react'
 import { useSignupFixBanner } from '../SignupFixBannerContext'
 
 type SignupStepLayoutProps = {
@@ -41,12 +42,17 @@ export default function SignupStepLayout({ progressPercent = 0, children }: Sign
             {fixBanner}
           </div>
         )}
-        <div className="flex-1 flex items-center justify-center w-full">
+        <div className="flex-1 flex flex-col items-center justify-center w-full">
           {children}
+          <div className="w-full max-w-6xl mx-auto px-6 pt-10 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Lock className="w-4 h-4" aria-hidden />
+              <span>Your intellectual property is private and encrypted.</span>
+            </div>
+          </div>
         </div>
       </main>
-
-      <footer className="py-6 text-center">
+      <footer className="mt-auto w-full py-6 text-center">
         <p className="text-xs text-muted-foreground tracking-wide">© 2026 Krowe Technologies Inc.</p>
       </footer>
     </div>

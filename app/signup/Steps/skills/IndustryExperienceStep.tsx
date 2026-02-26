@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type IndustryExperienceStepProps = {
@@ -62,7 +62,7 @@ export default function IndustryExperienceStep({
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   Auto-saved
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <button
                     type="button"
                     onClick={onBack}
@@ -74,10 +74,10 @@ export default function IndustryExperienceStep({
                     type="button"
                     onClick={onContinue}
                     disabled={value.trim().length < 3}
-                    className="group relative inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 bg-gray-900 rounded-lg hover:bg-primary-600 hover:shadow-lg hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:pointer-events-none"
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
-                    <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
                 </div>
@@ -85,13 +85,6 @@ export default function IndustryExperienceStep({
             </div>
           </div>
         </div>
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4 w-full flex justify-center">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
       </div>
     </SignupStepLayout>
   )

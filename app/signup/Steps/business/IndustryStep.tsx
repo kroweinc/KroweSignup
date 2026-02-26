@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 export type IndustryId =
@@ -119,10 +120,6 @@ export default function IndustryStep({
                 Based on your previous answers, we&apos;ve highlighted some sectors that seem like a good fit, or you can specify your own.
               </p>
             </div>
-            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Your intellectual property is secure.</span>
-            </div>
           </div>
 
           {/* Right column */}
@@ -192,7 +189,7 @@ export default function IndustryStep({
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+            <div className="mt-6 flex items-center justify-end gap-5 border-t border-gray-100 pt-4">
               {onBack != null && (
                 <button
                   type="button"
@@ -206,16 +203,11 @@ export default function IndustryStep({
                 type="button"
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="inline-flex items-center justify-center gap-2 bg-[#E05202] hover:bg-[#c44a02] text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E05202] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
-                <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
-            </div>
-
-            <div className="lg:hidden flex items-center justify-center gap-1.5 text-[11px] text-gray-400 mt-4 mb-6">
-              <span className="material-symbols-outlined text-xs">lock</span>
-              <span>Private and secure.</span>
             </div>
           </div>
         </div>

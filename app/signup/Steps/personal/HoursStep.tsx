@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type HoursCommitmentStepProps = {
@@ -38,18 +39,17 @@ export default function HoursCommitmentStep({
                 keep this number realistic, you&apos;re only lying to yourself
               </p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200/60 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white to-transparent opacity-50" />
-              <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" /> Time Commitment
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Understanding your available time helps us suggest realistic milestones and compatible co-founder matches.
+            {/* Structure Hint Box */}
+            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Time Commitment
+                </span>
+              </div>
+              <p className="font-mono text-sm text-black leading-relaxed">
+                Understanding your available time helps us suggest <span className="text-[#f97316]">realistic milestones</span> and <span className="text-[#f97316]">compatible co-founder matches</span>.
               </p>
-            </div>
-            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 font-medium">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Your startup details are private.</span>
             </div>
           </div>
           <div className="lg:col-span-7 w-full">
@@ -87,7 +87,7 @@ export default function HoursCommitmentStep({
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   Auto-saved
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <button
                     type="button"
                     onClick={onBack}
@@ -98,17 +98,13 @@ export default function HoursCommitmentStep({
                   <button
                     type="button"
                     onClick={onContinue}
-                    className="group relative inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 bg-gray-900 rounded-lg hover:bg-primary-600 hover:shadow-lg hover:shadow-orange-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors"
                   >
                     Continue
-                    <span className="material-symbols-outlined text-lg ml-2 transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="lg:hidden flex items-center justify-center gap-2 text-xs text-gray-400 mt-6 mb-8">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Private and encrypted.</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import SignupStepLayout from '../SignupStepLayout'
 
 type ProblemStepProps = {
@@ -37,13 +37,18 @@ export default function ProblemStep({
                 Great startups are built on clear problem statements. Identify the specific pain point your target audience is facing.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200/60 space-y-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-primary-500" /> Structure Tip
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Use this template: <br />
-                <span className="text-gray-900 font-semibold">&quot;We help [target customer] [solve specific problem] by [simple solution/mechanism]&quot;</span>
+            {/* Structure Hint Box */}
+            <div className="bg-[#fafafa] rounded-lg p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Use this structure
+                </span>
+              </div>
+              <p className="font-mono text-sm text-black leading-relaxed">
+                &quot;We help <span className="text-[#f97316]">[target customer]</span>{' '}
+                <span className="text-[#f97316]">[solve specific problem]</span> by{' '}
+                <span className="text-[#f97316]">[simple solution/mechanism]</span>&quot;
               </p>
             </div>
           </div>
@@ -63,7 +68,7 @@ export default function ProblemStep({
                 <span className="w-2 h-2 rounded-full bg-green-500" />
                 Auto-saved
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-5">
                 <button
                   type="button"
                   onClick={onBack}
@@ -75,22 +80,15 @@ export default function ProblemStep({
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
-                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         </div>
-        {/* Privacy Notice */}
-        <footer className="px-6 pt-10 pb-4 w-full flex justify-center">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="w-4 h-4" />
-            <span>Your intellectual property is private and encrypted.</span>
-          </div>
-        </footer>
       </div>
     </SignupStepLayout>
   )
