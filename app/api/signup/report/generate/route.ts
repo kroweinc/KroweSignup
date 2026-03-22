@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { generateReportForSession } from "@/lib/report/generateReportForSession";
+import { generateCurriculumForSession } from "@/lib/curriculum/generateCurriculumForSession";
+import { CURRICULUM_JSON_VERSION } from "@/lib/curriculum/constants";
 import { REPORT_VERSION } from "@/lib/constants";
 import type { GenerateReportRequest } from "@/lib/types/api";
 
@@ -19,6 +21,45 @@ function elapsedMs(startedAt: number): number {
 
 function logGenerateRoute(sessionId: string, requestStartedAt: number, message: string) {
   console.log(`[generate] ${message} (sessionId=${sessionId}, elapsedMs=${elapsedMs(requestStartedAt)})`);
+}
+
+function isStaleProcessing(updatedAt: string | null | undefined, staleMs: number): boolean {
+  if (!updatedAt) return true;
+  const t = Date.parse(updatedAt);
+  if (!Number.isFinite(t)) return true;
+  return Date.now() - t > staleMs;
+}
+
+type ReportRow = {
+  id: string;
+  status: string;
+  report: { version?: string } | null;
+  updated_at: string | null;
+};
+
+type CurriculumRow = {
+  id: string;
+  status: string;
+  curriculum_version: string;
+  updated_at: string | null;
+};
+
+function shouldRunReport(existing: ReportRow | null): boolean {
+  if (!existing?.id) return true;
+  if (existing.status === "ready" && existing.report?.version === CURRENT_VERSION) return false;
+  if (existing.status === "processing" && !isStaleProcessing(existing.updated_at, PROCESSING_STALE_MS)) {
+    return false;
+  }
+  return true;
+}
+
+function shouldRunCurriculum(existing: CurriculumRow | null): boolean {
+  if (!existing?.id) return true;
+  if (existing.status === "ready" && existing.curriculum_version === CURRICULUM_JSON_VERSION) return false;
+  if (existing.status === "processing" && !isStaleProcessing(existing.updated_at, PROCESSING_STALE_MS)) {
+    return false;
+  }
+  return true;
 }
 
 async function markReportFailed(sessionId: string, error: unknown) {
@@ -42,23 +83,95 @@ async function markReportFailed(sessionId: string, error: unknown) {
   }
 }
 
-function enqueueReportGeneration(sessionId: string) {
-  const backgroundStartedAt = Date.now();
-  console.log(`[generate] Background report generation started (sessionId=${sessionId})`);
+async function markCurriculumFailed(sessionId: string, error: unknown) {
+  const supabase = createServerSupabaseClient();
+  const message = getErrorMessage(error, "Curriculum generation failed");
 
-  void generateReportForSession(sessionId, { reason: "generate" })
-    .then((result) => {
+  const { error: updateErr } = await supabase.from("signup_curricula").upsert(
+    {
+      session_id: sessionId,
+      status: "failed",
+      curriculum_version: CURRICULUM_JSON_VERSION,
+      error: message,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "session_id" }
+  );
+
+  if (updateErr) {
+    console.error("[generate] Failed to mark curriculum as failed:", updateErr);
+  }
+}
+
+async function upsertRoadmapProgress(sessionId: string) {
+  const supabase = createServerSupabaseClient();
+  const { error } = await supabase.from("signup_roadmap_progress").upsert(
+    {
+      session_id: sessionId,
+      unlocked_stage_max: 1,
+      completed_task_ids: [],
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "session_id" }
+  );
+  if (error) {
+    console.error("[generate] Failed to upsert signup_roadmap_progress:", error);
+  } else {
+    console.log(`[generate] signup_roadmap_progress upsert ok (sessionId=${sessionId})`);
+  }
+}
+
+function enqueueSignupEnrichment(
+  sessionId: string,
+  runReport: boolean,
+  runCurriculum: boolean
+) {
+  const backgroundStartedAt = Date.now();
+  console.log(
+    `[generate] Background enrichment started (sessionId=${sessionId}, runReport=${runReport}, runCurriculum=${runCurriculum})`
+  );
+
+  void Promise.allSettled([
+    runReport
+      ? generateReportForSession(sessionId, { reason: "generate" })
+      : Promise.resolve(null),
+    runCurriculum
+      ? generateCurriculumForSession(sessionId, { reason: "generate" })
+      : Promise.resolve(null),
+  ]).then(async (results) => {
+    const [repResult, curResult] = results;
+    if (repResult.status === "fulfilled" && repResult.value) {
+      const v = repResult.value as Awaited<ReturnType<typeof generateReportForSession>>;
       console.log(
-        `[generate] Background report generation completed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${result.updatedAt})`
+        `[generate] Report OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
       );
-    })
-    .catch(async (error: unknown) => {
+    } else if (repResult.status === "rejected") {
+      const err = repResult.reason;
       console.error(
-        `[generate] Background report generation failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
-        error
+        `[generate] Report failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+        err
       );
-      await markReportFailed(sessionId, error);
-    });
+      await markReportFailed(sessionId, err);
+    }
+
+    if (curResult.status === "fulfilled" && curResult.value) {
+      const v = curResult.value as Awaited<ReturnType<typeof generateCurriculumForSession>>;
+      console.log(
+        `[generate] Curriculum OK (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}, updatedAt=${v.updatedAt})`
+      );
+    } else if (curResult.status === "rejected") {
+      const err = curResult.reason;
+      console.error(
+        `[generate] Curriculum failed (sessionId=${sessionId}, durationMs=${elapsedMs(backgroundStartedAt)}):`,
+        err
+      );
+      await markCurriculumFailed(sessionId, err);
+    }
+
+    console.log(
+      `[generate] Background enrichment settled (sessionId=${sessionId}, totalMs=${elapsedMs(backgroundStartedAt)})`
+    );
+  });
 }
 
 export async function POST(req: Request) {
@@ -72,7 +185,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
   }
 
-  // 1) If report exists, check status and version
+  // Run first so every path (including duplicate POST / report insert race 23505 early return)
+  // still creates roadmap progress for this session.
+  await upsertRoadmapProgress(sessionId);
+
   const { data: existing, error: exErr } = await supabase
     .from("signup_reports")
     .select("id, status, report, updated_at")
@@ -81,95 +197,171 @@ export async function POST(req: Request) {
 
   if (exErr) {
     console.error("Error fetching existing report:", exErr);
-    // proceed to try generating, or return error?
   }
 
-  const existingVersion = existing?.report?.version;
-  const isCurrent = existingVersion === CURRENT_VERSION;
-  const isReady = existing?.status === "ready";
-  const isProcessing = existing?.status === "processing";
-  const lastUpdatedMs = existing?.updated_at ? Date.parse(existing.updated_at) : NaN;
-  const isStaleProcessing =
-    isProcessing &&
-    Number.isFinite(lastUpdatedMs) &&
-    Date.now() - lastUpdatedMs > PROCESSING_STALE_MS;
+  const { data: existingCurriculum, error: curErr } = await supabase
+    .from("signup_curricula")
+    .select("id, status, curriculum_version, updated_at")
+    .eq("session_id", sessionId)
+    .maybeSingle();
 
-  // If it's already done (ready) and version matches, return it
-  if (existing?.id && isCurrent && isReady) {
-    logGenerateRoute(sessionId, requestStartedAt, "Returning existing ready report");
-    return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "ready" });
+  if (curErr) {
+    console.error("Error fetching existing curriculum:", curErr);
   }
 
-  // If it's currently processing and not stale, return immediately.
-  if (existing?.id && isProcessing && isCurrent && !isStaleProcessing) {
-    logGenerateRoute(sessionId, requestStartedAt, "Report already processing, returning immediately");
-    return NextResponse.json({ ok: true, reportId: existing.id, sessionId, status: "processing" });
-  }
+  const rep = existing as ReportRow | null;
+  const cur = existingCurriculum as CurriculumRow | null;
 
-  let reportId = existing?.id;
+  const runRep = shouldRunReport(rep);
+  const runCur = shouldRunCurriculum(cur);
 
-  // If no report exists, try to INSERT a 'processing' placeholder.
-  // We use INSERT (not upsert) to let the database handle race conditions via unique constraint on session_id.
-  if (!existing?.id) {
-    const { data: inserted, error: insertErr } = await supabase
-      .from("signup_reports")
-      .insert({
-        session_id: sessionId,
+  // Neither side needs a fresh run — either both done or mid-flight
+  if (!runRep && !runCur) {
+    const repBusy =
+      rep?.status === "processing" && !isStaleProcessing(rep?.updated_at, PROCESSING_STALE_MS);
+    const curBusy =
+      cur?.status === "processing" && !isStaleProcessing(cur?.updated_at, PROCESSING_STALE_MS);
+    if (repBusy || curBusy) {
+      logGenerateRoute(
+        sessionId,
+        requestStartedAt,
+        "Report and/or curriculum already processing, returning immediately"
+      );
+      return NextResponse.json({
+        ok: true,
+        reportId: rep?.id,
+        sessionId,
         status: "processing",
-        report: { version: CURRENT_VERSION }, // placeholder with version
-        updated_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+      });
+    }
+    logGenerateRoute(sessionId, requestStartedAt, "No regeneration needed; returning ready");
+    return NextResponse.json({
+      ok: true,
+      reportId: rep?.id,
+      sessionId,
+      status: "ready",
+    });
+  }
 
-    if (insertErr) {
-      // If error is unique constraint violation, it means another request just started it.
-      // We should fetch that one and return it.
-      if (insertErr.code === "23505") { // Postgres unique_violation code
-        const { data: racer } = await supabase
-          .from("signup_reports")
-          .select("id, status")
-          .eq("session_id", sessionId)
-          .single();
+  let reportId = rep?.id;
 
-        return NextResponse.json({
-          ok: true,
-          reportId: racer?.id,
-          sessionId,
-          status: racer?.status ?? "processing",
-        });
-      } else {
-        logGenerateRoute(sessionId, requestStartedAt, "Insert failed while creating processing placeholder");
+  // Report placeholder (insert or reset to processing)
+  if (runRep) {
+    if (!rep?.id) {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("signup_reports")
+        .insert({
+          session_id: sessionId,
+          status: "processing",
+          report: { version: CURRENT_VERSION },
+          updated_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertErr) {
+        if (insertErr.code === "23505") {
+          const { data: racer } = await supabase
+            .from("signup_reports")
+            .select("id, status")
+            .eq("session_id", sessionId)
+            .single();
+
+          logGenerateRoute(
+            sessionId,
+            requestStartedAt,
+            "Report placeholder race (23505); other request owns generation — returning"
+          );
+          return NextResponse.json({
+            ok: true,
+            reportId: racer?.id,
+            sessionId,
+            status: racer?.status ?? "processing",
+          });
+        }
+        logGenerateRoute(sessionId, requestStartedAt, "Insert failed while creating report placeholder");
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
       }
-    }
-    reportId = inserted?.id;
-    logGenerateRoute(sessionId, requestStartedAt, "Inserted processing placeholder");
-  } else if (!isReady || !isCurrent || isStaleProcessing) {
-    // Existing row is stale/outdated/incomplete - reset to processing and regenerate.
-    const { error: updateErr } = await supabase
-      .from("signup_reports")
-      .update({
-        status: "processing",
-        report: { version: CURRENT_VERSION },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("session_id", sessionId);
+      reportId = inserted?.id;
+      logGenerateRoute(sessionId, requestStartedAt, "Inserted report processing placeholder");
+    } else {
+      const isReady = rep.status === "ready";
+      const isCurrent = rep.report?.version === CURRENT_VERSION;
+      const isProcessing = rep.status === "processing";
+      const lastUpdatedMs = rep.updated_at ? Date.parse(rep.updated_at) : NaN;
+      const isStaleProcessingRep =
+        isProcessing &&
+        Number.isFinite(lastUpdatedMs) &&
+        Date.now() - lastUpdatedMs > PROCESSING_STALE_MS;
 
-    if (updateErr) {
-      logGenerateRoute(sessionId, requestStartedAt, "Failed to reset report to processing");
-      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      if (!isReady || !isCurrent || isStaleProcessingRep) {
+        const { error: updateErr } = await supabase
+          .from("signup_reports")
+          .update({
+            status: "processing",
+            report: { version: CURRENT_VERSION },
+            updated_at: new Date().toISOString(),
+          })
+          .eq("session_id", sessionId);
+
+        if (updateErr) {
+          logGenerateRoute(sessionId, requestStartedAt, "Failed to reset report to processing");
+          return NextResponse.json({ error: updateErr.message }, { status: 500 });
+        }
+        logGenerateRoute(sessionId, requestStartedAt, "Reset existing report to processing");
+      }
     }
-    logGenerateRoute(sessionId, requestStartedAt, "Reset existing report to processing");
   }
 
-  // 2) Kick off generation in background and return immediately.
-  enqueueReportGeneration(sessionId);
-  logGenerateRoute(sessionId, requestStartedAt, "Enqueued background generation and returning processing");
+  // Curriculum placeholder
+  if (runCur) {
+    if (!cur?.id) {
+      const { error: cIns } = await supabase
+        .from("signup_curricula")
+        .insert({
+          session_id: sessionId,
+          status: "processing",
+          curriculum_version: CURRICULUM_JSON_VERSION,
+          updated_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (cIns) {
+        if (cIns.code === "23505") {
+          logGenerateRoute(sessionId, requestStartedAt, "Curriculum row race; continuing");
+        } else {
+          logGenerateRoute(sessionId, requestStartedAt, "Insert failed for curriculum placeholder");
+          return NextResponse.json({ error: cIns.message }, { status: 500 });
+        }
+      } else {
+        logGenerateRoute(sessionId, requestStartedAt, "Inserted curriculum processing placeholder");
+      }
+    } else {
+      const { error: cUp } = await supabase
+        .from("signup_curricula")
+        .update({
+          status: "processing",
+          curriculum_version: CURRICULUM_JSON_VERSION,
+          error: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("session_id", sessionId);
+
+      if (cUp) {
+        logGenerateRoute(sessionId, requestStartedAt, "Failed to reset curriculum to processing");
+        return NextResponse.json({ error: cUp.message }, { status: 500 });
+      }
+      logGenerateRoute(sessionId, requestStartedAt, "Reset curriculum to processing");
+    }
+  }
+
+  enqueueSignupEnrichment(sessionId, runRep, runCur);
+  logGenerateRoute(sessionId, requestStartedAt, "Enqueued background enrichment and returning processing");
 
   return NextResponse.json({
     ok: true,
-    reportId: reportId ?? existing?.id,
+    reportId: reportId ?? rep?.id,
     sessionId,
     status: "processing",
   });

@@ -59,3 +59,9 @@ export const ENV = {
   SUPABASE_ANON_KEY: env.supabase.anonKey,
   OPENAI_API_KEY: env.openai.apiKey,
 } as const;
+
+/** Optional: base URL for platform app (Continue to dashboard). */
+export function getOptionalPublicPlatformUrl(): string | undefined {
+  const v = process.env.NEXT_PUBLIC_PLATFORM_URL?.trim();
+  return v || undefined;
+}

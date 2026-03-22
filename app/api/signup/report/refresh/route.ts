@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { generateReportForSession } from "@/lib/report/generateReportForSession";
+import { generateCurriculumForSession } from "@/lib/curriculum/generateCurriculumForSession";
 
 /**
  * POST /api/signup/report/refresh
  *
  * Dev-only endpoint for testing prompt changes.
- * Regenerates a report from stored signup_answers, including all LLM enrichment
- * (competitors, MVP cost, market size).
+ * Regenerates the report and curriculum from stored signup_answers (report includes
+ * LLM enrichment: competitors, MVP cost, market size, etc.).
  *
  * This allows you to:
- * 1. Edit prompts in lib/report/*.ts
+ * 1. Edit prompts in lib/report/*.ts or lib/curriculum/*.ts
  * 2. Call this endpoint to regenerate with updated prompts
  * 3. See the new results without going through the full signup flow
  */
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   let body;
   try {
     body = await req.json();
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[refresh] Error parsing request body:", err);
     return NextResponse.json(
       { error: "Invalid JSON" },
@@ -39,38 +40,71 @@ export async function POST(req: Request) {
     );
   }
 
-  console.log("[refresh] Regenerating report for session:", sessionId);
+  console.log("[refresh] Regenerating report + curriculum for session:", sessionId);
 
-  try {
-    // Use the shared pipeline - runs all LLM enrichment modules
-    const result = await generateReportForSession(sessionId, {
+  const [repResult, curResult] = await Promise.allSettled([
+    generateReportForSession(sessionId, {
       reason: "refresh",
       forceRegenerate: true,
-    });
+    }),
+    generateCurriculumForSession(sessionId, { reason: "refresh" }),
+  ]);
 
-    // Log enrichment results for debugging prompt changes
-    if (result.enrichmentDebug) {
-      console.log("[refresh] Enrichment results:", {
-        competitors: result.enrichmentDebug.competitorCount,
-        competitorError: result.enrichmentDebug.competitorError,
-        hasCostEstimate: result.enrichmentDebug.hasCostEstimate,
-        hasMarketSize: result.enrichmentDebug.hasMarketSize,
-      });
-    }
+  const reportError =
+    repResult.status === "rejected"
+      ? repResult.reason instanceof Error
+        ? repResult.reason.message
+        : String(repResult.reason)
+      : null;
+  const curriculumError =
+    curResult.status === "rejected"
+      ? curResult.reason instanceof Error
+        ? curResult.reason.message
+        : String(curResult.reason)
+      : null;
 
-    return NextResponse.json({
-      ok: true,
-      sessionId,
-      updatedAt: result.updatedAt,
-      reportId: result.reportId,
-      // Include enrichment debug info in dev response
-      enrichmentDebug: result.enrichmentDebug,
+  if (repResult.status === "fulfilled" && repResult.value.enrichmentDebug) {
+    console.log("[refresh] Enrichment results:", {
+      competitors: repResult.value.enrichmentDebug.competitorCount,
+      competitorError: repResult.value.enrichmentDebug.competitorError,
+      hasCostEstimate: repResult.value.enrichmentDebug.hasCostEstimate,
+      hasMarketSize: repResult.value.enrichmentDebug.hasMarketSize,
     });
-  } catch (error: any) {
-    console.error("[refresh] Report generation failed:", error);
+  }
+
+  if (reportError && curriculumError) {
     return NextResponse.json(
-      { error: error?.message || "Report refresh failed" },
+      {
+        error: "Report and curriculum refresh failed",
+        reportError,
+        curriculumError,
+      },
       { status: 500 }
     );
   }
+
+  const report =
+    repResult.status === "fulfilled"
+      ? {
+          updatedAt: repResult.value.updatedAt,
+          reportId: repResult.value.reportId,
+          enrichmentDebug: repResult.value.enrichmentDebug,
+        }
+      : null;
+  const curriculum =
+    curResult.status === "fulfilled"
+      ? {
+          updatedAt: curResult.value.updatedAt,
+          curriculumId: curResult.value.curriculumId,
+        }
+      : null;
+
+  return NextResponse.json({
+    ok: true,
+    sessionId,
+    report,
+    curriculum,
+    reportError,
+    curriculumError,
+  });
 }

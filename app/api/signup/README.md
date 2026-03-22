@@ -7,7 +7,7 @@ This directory contains all API routes for the signup flow.
 ```
 app/api/signup/
 ├── session/
-│   ├── start/          # POST - Create new signup session
+│   ├── start/           # POST - Create new signup session
 │   └── [sessionId]/     # GET - Get session by ID
 ├── answer/
 │   ├── route.ts         # POST - Submit and validate answer
@@ -117,7 +117,13 @@ Marks a signup session as complete.
 ### Report Generation
 
 #### `POST /api/signup/report/generate`
-Generates a report for a completed signup session.
+Starts **background** generation for a completed signup session:
+
+- **Report** → `signup_reports` (existing pipeline: enrichment, then `status: ready`).
+- **Curriculum** → `signup_curricula` (OpenAI JSON validated against `curriculumPayloadSchema` in [`lib/curriculum/schema.ts`](../../../lib/curriculum/schema.ts)).
+- **Roadmap progress** → `signup_roadmap_progress` is upserted (`unlocked_stage_max: 1`, `completed_task_ids: []`) before work runs.
+
+Failures are **independent** (e.g. report can succeed if curriculum fails). The HTTP response returns immediately with `status: processing` while work continues.
 
 **Request Body:**
 ```json
@@ -131,9 +137,27 @@ Generates a report for a completed signup session.
 {
   "ok": true,
   "reportId": "uuid",
-  "sessionId": "uuid"
+  "sessionId": "uuid",
+  "status": "processing"
 }
 ```
+
+When both artifacts are already at the current `REPORT_VERSION` and `CURRICULUM_JSON_VERSION`, the handler returns `"status": "ready"` without re-enqueueing.
+
+#### `POST /api/signup/report/refresh` (development only)
+Regenerates **report and curriculum** in parallel for a `sessionId`. Returns `404` in production.
+
+### Manual test checklist (Plan B)
+
+1. Apply SQL migrations [`001`](../../../supabase/migrations/001_curriculum.sql) and [`002`](../../../supabase/migrations/002_curriculum_processing_status.sql) in Supabase.
+2. Complete signup and land on `/signup/complete?sessionId=...` (triggers `POST /api/signup/report/generate`).
+3. In Supabase: `signup_reports.status = ready`, `signup_curricula.status = ready` with non-null `payload`, `signup_roadmap_progress.unlocked_stage_max = 1`.
+4. Optional: force curriculum failure (e.g. invalid API key) and confirm `signup_reports` can still become `ready` while `signup_curricula.status = failed`.
+
+### Manual test checklist (Plan C — platform roadmap, no auth)
+
+1. Set `NEXT_PUBLIC_PLATFORM_URL` on the signup app to your platform origin (e.g. `http://localhost:3001`).
+2. On the report page, click **Continue to dashboard** → platform opens `/roadmap?session_id=...` and loads curriculum from Supabase (anon RLS); stages above `unlocked_stage_max` are locked.
 
 #### `GET /api/signup/report/[sessionId]`
 Retrieves a generated report.
