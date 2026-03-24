@@ -1,0 +1,191 @@
+import OpenAI from "openai";
+import { ENV } from "../env";
+import { extractResponseText } from "../report/marketSizeUtils";
+import type { ProblemCluster, DecisionOutput, FeatureSpec, UserFlow, EdgeCase, SuccessMetric } from "./types";
+
+const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
+
+type GenerateDecisionParams = {
+  cluster: ProblemCluster & { id: string };
+  allClusters: Array<ProblemCluster & { id: string }>;
+  founderContext: {
+    idea: string | null;
+    problem: string | null;
+    targetCustomer: string | null;
+    industry: string | null;
+  } | null;
+};
+
+type GenerateDecisionResult = Omit<
+  DecisionOutput,
+  "project_id" | "selected_cluster_id" | "status" | "created_at"
+>;
+
+export async function generateDecision(
+  params: GenerateDecisionParams
+): Promise<GenerateDecisionResult> {
+  const { cluster, allClusters, founderContext } = params;
+
+  const systemPrompt =
+    "You are a senior product strategist. Generate a complete product specification grounded in real user data.";
+
+  const runnerUps = allClusters
+    .filter((c) => c.id !== cluster.id)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((c) => `- ${c.canonical_problem} (score: ${c.score.toFixed(2)}, freq: ${c.frequency})`);
+
+  const quotesText = cluster.supporting_quotes
+    .slice(0, 5)
+    .map((q, i) => `Quote ${i + 1}: "${q.text}"`)
+    .join("\n");
+
+  const founderText = founderContext
+    ? [
+        founderContext.idea ? `Idea: ${founderContext.idea}` : null,
+        founderContext.problem ? `Problem: ${founderContext.problem}` : null,
+        founderContext.targetCustomer ? `Target Customer: ${founderContext.targetCustomer}` : null,
+        founderContext.industry ? `Industry: ${founderContext.industry}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : null;
+
+  const userPrompt = [
+    `TOP PROBLEM: ${cluster.canonical_problem}`,
+    `Score: ${cluster.score.toFixed(2)} | Frequency: ${cluster.frequency} | Avg Intensity: ${cluster.avg_intensity.toFixed(1)}/5 | Consistency: ${cluster.consistency_score.toFixed(2)}`,
+    "",
+    "Supporting Quotes:",
+    quotesText,
+    "",
+    runnerUps.length > 0 ? `Runner-up problems:\n${runnerUps.join("\n")}` : null,
+    founderText ? `\nFounder Context:\n${founderText}` : null,
+  ]
+    .filter((x) => x !== null)
+    .join("\n");
+
+  const maxAttempts = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await client.responses.create({
+        model: "gpt-5-nano",
+        input: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "decision_output",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                reasoning: { type: "string" },
+                confidence_score: { type: "number" },
+                feature_specs: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      name: { type: "string" },
+                      description: { type: "string" },
+                      priority: {
+                        type: "string",
+                        enum: ["must-have", "should-have", "nice-to-have"],
+                      },
+                    },
+                    required: ["name", "description", "priority"],
+                  },
+                },
+                user_flows: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      title: { type: "string" },
+                      steps: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["title", "steps"],
+                  },
+                },
+                edge_cases: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      scenario: { type: "string" },
+                      mitigation: { type: "string" },
+                    },
+                    required: ["scenario", "mitigation"],
+                  },
+                },
+                success_metrics: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      metric: { type: "string" },
+                      target: { type: "string" },
+                      rationale: { type: "string" },
+                    },
+                    required: ["metric", "target", "rationale"],
+                  },
+                },
+              },
+              required: [
+                "reasoning",
+                "confidence_score",
+                "feature_specs",
+                "user_flows",
+                "edge_cases",
+                "success_metrics",
+              ],
+            },
+          },
+        },
+      });
+
+      const raw = extractResponseText(resp);
+      if (!raw) {
+        lastError = new Error("generateDecision: empty model output");
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 500 * attempt));
+          continue;
+        }
+        throw lastError;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        reasoning: string;
+        confidence_score: number;
+        feature_specs: FeatureSpec[];
+        user_flows: UserFlow[];
+        edge_cases: EdgeCase[];
+        success_metrics: SuccessMetric[];
+      };
+
+      return parsed;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      const isRetriable =
+        lastError.message.includes("empty model output") ||
+        lastError.message.includes("JSON");
+
+      if (isRetriable && attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 500 * attempt));
+        continue;
+      }
+      throw lastError;
+    }
+  }
+
+  throw lastError ?? new Error("generateDecision: failed after retries");
+}
