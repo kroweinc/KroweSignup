@@ -37,7 +37,7 @@ export async function categorizeClusterGroups(
 
   try {
     const resp = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.4-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

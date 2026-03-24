@@ -21,7 +21,7 @@ export async function extractProblems(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const resp = await client.responses.create({
-        model: "gpt-5-nano",
+        model: "gpt-5.4-mini",
         input: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
