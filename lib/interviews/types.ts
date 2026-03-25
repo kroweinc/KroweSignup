@@ -65,6 +65,16 @@ export type SuccessMetric = {
   rationale: string;
 };
 
+export type MetaCluster = {
+  id: string;
+  title: string;
+  description: string;
+  cluster_ids: string[];
+  supporting_quotes: SupportingQuote[];
+  frequency: number;
+  score: number;
+};
+
 export type DecisionOutput = {
   project_id: string;
   selected_cluster_id: string | null;
@@ -74,6 +84,7 @@ export type DecisionOutput = {
   edge_cases: EdgeCase[];
   success_metrics: SuccessMetric[];
   confidence_score: number;
+  meta_clusters?: MetaCluster[];
   status: "processing" | "ready" | "failed" | "insufficient_data";
   created_at: string;
 };

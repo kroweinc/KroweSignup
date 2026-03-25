@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MetaClusterCard } from "./MetaClusterCard";
 import type {
   ProblemCluster,
   FeatureSpec,
@@ -8,6 +9,7 @@ import type {
   EdgeCase,
   SuccessMetric,
   DecisionOutput,
+  MetaCluster,
 } from "@/lib/interviews/types";
 
 export const dynamic = "force-dynamic";
@@ -31,26 +33,21 @@ function ScoreBar({ label, value, max = 1 }: { label: string; value: number; max
   );
 }
 
-function SupportingQuotes({
-  quotes,
-  interviewsSortedIds,
+function QuoteCard({
+  quote,
+  interviewLabel,
 }: {
-  quotes: ProblemCluster["supporting_quotes"];
-  interviewsSortedIds: string[];
+  quote: ProblemCluster["supporting_quotes"][number];
+  interviewLabel: string;
 }) {
   return (
-    <div className="space-y-3">
-      {quotes.map((q, i) => {
-        const interviewIndex = interviewsSortedIds.indexOf(q.interview_id);
-        const label =
-          interviewIndex >= 0 ? `Interview #${interviewIndex + 1}` : "Interview";
-        return (
-          <blockquote key={i} className="border-l-2 border-border pl-4">
-            <p className="text-sm italic">&ldquo;{q.text}&rdquo;</p>
-            <cite className="text-xs text-muted-foreground mt-1 block not-italic">{label}</cite>
-          </blockquote>
-        );
-      })}
+    <div className="flex flex-col justify-between border border-border rounded-xl p-5 bg-card min-h-[120px]">
+      <p className="text-sm italic leading-relaxed text-foreground/90">
+        &ldquo;{quote.text}&rdquo;
+      </p>
+      <cite className="text-xs text-muted-foreground mt-3 block not-italic font-medium">
+        {interviewLabel}
+      </cite>
     </div>
   );
 }
@@ -112,7 +109,7 @@ export default async function DecisionPage({
     supabase
       .from("decision_outputs")
       .select(
-        "id, selected_cluster_id, reasoning, feature_specs, user_flows, edge_cases, success_metrics, confidence_score, status, updated_at, created_at"
+        "id, selected_cluster_id, reasoning, feature_specs, user_flows, edge_cases, success_metrics, confidence_score, meta_clusters, status, updated_at, created_at"
       )
       .eq("project_id", projectId)
       .order("updated_at", { ascending: false })
@@ -178,6 +175,7 @@ export default async function DecisionPage({
     );
   }
 
+  const metaClusters = (decision.meta_clusters as MetaCluster[] | null) ?? [];
   const featureSpecs = (decision.feature_specs as FeatureSpec[] | null) ?? [];
   const userFlows = (decision.user_flows as UserFlow[] | null) ?? [];
   const edgeCases = (decision.edge_cases as EdgeCase[] | null) ?? [];
@@ -285,12 +283,29 @@ export default async function DecisionPage({
 
           {/* Supporting Quotes */}
           {topCluster && topCluster.supporting_quotes.length > 0 && (
-            <DashboardCard className="lg:col-span-5 space-y-4">
-              <SectionHeading>Supporting Quotes</SectionHeading>
-              <SupportingQuotes
-                quotes={topCluster.supporting_quotes}
-                interviewsSortedIds={interviewsSortedIds}
-              />
+            <div className="lg:col-span-12 md:col-span-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Voice of the Customer
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {topCluster.supporting_quotes.map((q, i) => {
+                  const idx = interviewsSortedIds.indexOf(q.interview_id);
+                  const label = idx >= 0 ? `Interview #${idx + 1}` : "Interview";
+                  return <QuoteCard key={i} quote={q} interviewLabel={label} />;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Meta Clusters */}
+          {metaClusters.length > 0 && (
+            <DashboardCard className="lg:col-span-12 space-y-4">
+              <SectionHeading>Problem Meta-Themes</SectionHeading>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {metaClusters.map((mc) => (
+                  <MetaClusterCard key={mc.id} mc={mc} allClusters={allClusters} />
+                ))}
+              </div>
             </DashboardCard>
           )}
 
@@ -434,12 +449,12 @@ export default async function DecisionPage({
               <SectionHeading>Success Metrics</SectionHeading>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {successMetrics.map((m, i) => (
-                  <div key={i} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-4 mb-1">
-                      <span className="font-medium text-sm">{m.metric}</span>
-                      <span className="text-sm font-semibold shrink-0">{m.target}</span>
+                  <div key={i} className="border border-border rounded-lg p-4 overflow-hidden">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="font-medium text-sm min-w-0 break-words">{m.metric}</span>
+                      <span className="text-sm font-semibold shrink-0 text-right">{m.target}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{m.rationale}</p>
+                    <p className="text-xs text-muted-foreground break-words">{m.rationale}</p>
                   </div>
                 ))}
               </div>

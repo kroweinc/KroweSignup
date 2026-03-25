@@ -2,16 +2,16 @@ import { createServerSupabaseClient } from "../supabaseServer";
 import { structureInterview } from "./structureInterview";
 import { extractProblems } from "./extractProblems";
 import { embedProblems, clusterByCosineSimilarity } from "./clusterProblems";
-import { scoreCluster } from "./scoreProblems";
+import { scoreCluster, selectTopQuotes } from "./scoreProblems";
 import { mergeCluster } from "./mergeClusters";
 import { mergeClusterGroups } from "./mergeClusterGroups";
 import { generateDecision } from "./generateDecision";
 import { categorizeClusterGroups } from "./categorizeClusterGroups";
+import { generateMetaClusters } from "./generateMetaClusters";
 import type {
   ExtractedProblemWithEmbedding,
   ProblemCluster,
   PipelineResult,
-  SupportingQuote,
 } from "./types";
 
 export async function runDecisionPipeline(projectId: string, force = false): Promise<PipelineResult> {
@@ -245,13 +245,14 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         );
 
         const scores = scoreCluster(members, totalInterviews, totalProblems);
-        const supportingQuotes: SupportingQuote[] = members
-          .map((m) => ({
+        const supportingQuotes = selectTopQuotes(
+          members.map((m) => ({
             text: m.supporting_quote,
             interview_id: m.interview_id,
             problem_id: m.id,
+            intensity: m.intensity_score,
           }))
-          .filter((q) => q.text);
+        );
 
         const cluster: ProblemCluster = {
           canonical_problem: canonicalStatement,
@@ -284,7 +285,13 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     console.log(`[pipeline] clusters after global merge: ${finalClusters.length}`);
     console.timeEnd("[pipeline] global-merge");
 
-    // 8c. Categorize clusters
+    // 8c. Generate meta clusters
+    console.time("[pipeline] meta-clusters");
+    const metaClusters = await generateMetaClusters(finalClusters);
+    console.log(`[pipeline] meta clusters generated: ${metaClusters.length}`);
+    console.timeEnd("[pipeline] meta-clusters");
+
+    // 8d. Categorize clusters
     console.time("[pipeline] categorize");
     const categorizedClusters = await categorizeClusterGroups(finalClusters);
     console.timeEnd("[pipeline] categorize");
@@ -327,6 +334,21 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       ...c,
       id: insertedClusters[i]?.id,
     })) as Array<ProblemCluster & { id: string }>;
+
+    // Remap meta cluster cluster_ids from "cluster_N" index strings to real DB IDs.
+    // Match via canonical_problem to avoid relying on Supabase insertion-return order.
+    const metaClustersWithRealIds = metaClusters.map((mc) => ({
+      ...mc,
+      cluster_ids: mc.cluster_ids
+        .map((cid) => {
+          const idx = parseInt(cid.replace("cluster_", ""), 10);
+          if (isNaN(idx)) return null;
+          const sourceCanonical = finalClusters[idx]?.canonical_problem;
+          if (!sourceCanonical) return null;
+          return allClustersWithIds.find((c) => c.canonical_problem === sourceCanonical)?.id ?? null;
+        })
+        .filter((id): id is string => id !== null),
+    }));
 
     // 10. Sort clusters by score, apply sanity check to find top cluster
     const sorted = [...allClustersWithIds].sort((a, b) => b.score - a.score);
@@ -388,6 +410,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
           edge_cases: decision.edge_cases,
           success_metrics: decision.success_metrics,
           confidence_score: decision.confidence_score,
+          meta_clusters: metaClustersWithRealIds,
           status: "ready",
           updated_at: new Date().toISOString(),
         },
