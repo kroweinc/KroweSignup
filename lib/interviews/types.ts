@@ -18,6 +18,7 @@ export type ExtractedProblem = {
   intensity_score: number;
   confidence: number;
   supporting_quote: string;
+  verbatim_quote?: string;
 };
 
 export type ExtractedProblemWithEmbedding = ExtractedProblem & {
@@ -28,6 +29,8 @@ export type ExtractedProblemWithEmbedding = ExtractedProblem & {
 
 export type SupportingQuote = {
   text: string;
+  normalized_text?: string;
+  verbatim_text?: string;
   interview_id: string;
   problem_id: string;
 };

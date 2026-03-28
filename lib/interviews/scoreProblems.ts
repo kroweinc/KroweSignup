@@ -31,16 +31,29 @@ export function scoreCluster(
 export function selectTopQuotes(
   candidates: Array<{
     text: string;
+    normalized_text?: string;
+    verbatim_text?: string;
     interview_id: string;
     problem_id: string;
     intensity: number;
   }>,
   topN = 3
 ): SupportingQuote[] {
-  const valid = candidates.filter((c) => c.text && c.text.length > 0);
+  const valid = candidates.filter(
+    (c) =>
+      (c.verbatim_text && c.verbatim_text.length > 0) ||
+      (c.normalized_text && c.normalized_text.length > 0) ||
+      (c.text && c.text.length > 0)
+  );
   const scored = valid.map((c) => ({
     ...c,
-    _score: c.intensity * 10 + (c.text.length >= 20 && c.text.length <= 300 ? 1 : 0),
+    _candidateText: c.verbatim_text || c.normalized_text || c.text,
+    _score:
+      c.intensity * 10 +
+      ((c.verbatim_text || c.normalized_text || c.text).length >= 20 &&
+      (c.verbatim_text || c.normalized_text || c.text).length <= 300
+        ? 1
+        : 0),
   }));
   scored.sort((a, b) => b._score - a._score);
 
@@ -63,8 +76,11 @@ export function selectTopQuotes(
     selected.push(deferred[di++]);
   }
 
-  return selected.map(({ text, interview_id, problem_id }) => ({
-    text,
+  return selected.map(({ text, normalized_text, verbatim_text, interview_id, problem_id }) => ({
+    // UI display text should prefer exact transcript language when present.
+    text: verbatim_text || normalized_text || text,
+    normalized_text: normalized_text || text,
+    verbatim_text: verbatim_text || undefined,
     interview_id,
     problem_id,
   }));

@@ -15,7 +15,10 @@ export async function mergeClusterGroups(
 ): Promise<ProblemCluster[]> {
   if (clusters.length <= maxClusters) {
     // No merge needed — strip _members before returning
-    return clusters.map(({ _members: _m, ...rest }) => rest);
+    return clusters.map(({ _members, ...rest }) => {
+      void _members;
+      return rest;
+    });
   }
 
   const clusterList = clusters
@@ -97,7 +100,13 @@ export async function mergeClusterGroups(
           normalized_freq * 0.4 + consistency_score * 0.4 + (avg_intensity / 5) * 0.2;
 
         const supporting_quotes: SupportingQuote[] = mergedMembers
-          .map((m) => ({ text: m.supporting_quote, interview_id: m.interview_id, problem_id: m.id }))
+          .map((m) => ({
+            text: m.verbatim_quote || m.supporting_quote,
+            normalized_text: m.supporting_quote,
+            verbatim_text: m.verbatim_quote || undefined,
+            interview_id: m.interview_id,
+            problem_id: m.id,
+          }))
           .filter((q) => q.text);
 
         // Preserve category from the highest-scoring source cluster in the group
@@ -138,5 +147,8 @@ export async function mergeClusterGroups(
   return clusters
     .sort((a, b) => b.score - a.score)
     .slice(0, maxClusters)
-    .map(({ _members: _m, ...rest }) => rest);
+    .map(({ _members, ...rest }) => {
+      void _members;
+      return rest;
+    });
 }

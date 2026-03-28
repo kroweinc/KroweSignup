@@ -11,11 +11,15 @@ export async function extractProblems(
 ): Promise<ExtractedProblem[]> {
   const systemPrompt =
     "Extract normalized problems from these interview segments. Each must be a specific friction point " +
-    "(not a feature request, not vague). Merge duplicates. Each must include a supporting_quote that is a concise summary or paraphrase capturing the essence of the pain point from the interview — do not look for exact verbatim wording. " +
+    "(not a feature request, not vague). Merge duplicates. " +
+    "Each result must include BOTH: " +
+    "1) supporting_quote: a concise normalized summary/paraphrase of the pain point, and " +
+    "2) verbatim_quote: an exact short quote copied from the interview text that best supports the pain point. " +
+    "If an exact quote is unavailable, set verbatim_quote to an empty string. " +
     "For root_cause: identify the underlying reason this problem exists — must be broader than problem_text, explain WHY it occurs, not just that it occurs. " +
     "E.g., if the problem is 'users can't find their saved items', root_cause might be 'no persistent state management between sessions'. root_cause must not repeat problem_text wording.";
 
-  const userContent = JSON.stringify({ segments });
+  const userContent = JSON.stringify({ segments, rawText });
 
   const maxAttempts = 3;
   let lastError: Error | null = null;
@@ -50,6 +54,7 @@ export async function extractProblems(
                       intensity_score: { type: "number" },
                       confidence: { type: "number" },
                       supporting_quote: { type: "string" },
+                      verbatim_quote: { type: "string" },
                     },
                     required: [
                       "problem_text",
@@ -59,6 +64,7 @@ export async function extractProblems(
                       "intensity_score",
                       "confidence",
                       "supporting_quote",
+                      "verbatim_quote",
                     ],
                   },
                 },

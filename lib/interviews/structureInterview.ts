@@ -7,7 +7,7 @@ const client = new OpenAI({ apiKey: ENV.OPENAI_API_KEY });
 
 export async function structureInterview(rawText: string): Promise<StructuredInterview> {
   const systemPrompt =
-    "Structure this user interview into typed segments. For each segment, summarize the relevant part of the interview in your own words — do not look for verbatim quotes. " +
+    "Structure this user interview into typed segments. For each segment, write a concise summary in 'text' and copy a short verbatim quote from the interview transcript into 'quote' (exact words the person said, 10–80 chars). " +
     "Types: pain (a friction or problem), context (their situation), emotion (how they feel), intensity (how severe). " +
     "intensity_score 1–5: 1=mild, 3=significant, 5=daily blocker.";
 
