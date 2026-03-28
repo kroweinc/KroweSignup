@@ -217,7 +217,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
           await supabase
             .from("interviews")
             .update({
-              structured_segments: structured.segments,
+              structured_segments: structured,
               status: "structured",
             })
             .eq("id", interview.id);
@@ -235,6 +235,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
                 intensity_score: p.intensity_score,
                 confidence: p.confidence,
                 supporting_quote: p.supporting_quote ?? null,
+                verbatim_quote: p.verbatim_quote ?? null,
                 embedding: null,
               }))
             );
@@ -257,7 +258,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 4. Load all extracted problems for project (reuse allInterviewIds)
     const { data: allProblemsRaw } = await supabase
       .from("extracted_problems")
-      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, embedding")
+      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, verbatim_quote, embedding")
       .in("interview_id", allInterviewIds);
 
     const allProblems = allProblemsRaw ?? [];
@@ -287,7 +288,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 6. Reload all problems with embeddings (reuse allInterviewIds)
     const { data: problemsWithEmbeddings } = await supabase
       .from("extracted_problems")
-      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, embedding")
+      .select("id, interview_id, problem_text, customer_type, context, root_cause, intensity_score, confidence, supporting_quote, verbatim_quote, embedding")
       .in("interview_id", allInterviewIds)
       .not("embedding", "is", null);
 
@@ -302,6 +303,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         intensity_score: number;
         confidence: number;
         supporting_quote: string;
+        verbatim_quote: string | null;
         embedding: number[];
       }) => ({
         id: p.id,
@@ -313,6 +315,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         intensity_score: p.intensity_score,
         confidence: p.confidence,
         supporting_quote: p.supporting_quote,
+        verbatim_quote: p.verbatim_quote ?? undefined,
         embedding: Array.isArray(p.embedding) ? p.embedding : (p.embedding as unknown as number[]),
       })
     );
@@ -372,6 +375,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
         const supportingQuotes = selectTopQuotes(
           members.map((m) => ({
             text: m.supporting_quote,
+            normalized_text: m.supporting_quote,
+            verbatim_text: m.verbatim_quote,
             interview_id: m.interview_id,
             problem_id: m.id,
             intensity: m.intensity_score,

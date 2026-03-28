@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import InterviewDetailClient from "./InterviewDetailClient";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export default async function InterviewDetailPage({
 
   const { data: interview, error } = await supabase
     .from("interviews")
-    .select("id, raw_text, status, created_at")
+    .select("id, raw_text, status, created_at, structured_segments")
     .eq("id", interviewId)
     .eq("project_id", projectId)
     .single();
@@ -23,48 +23,32 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
+  const structured = interview.structured_segments as {
+    summary?: string;
+    segments?: Array<{ type: string; text: string; quote?: string; intensity?: number }>;
+  } | null;
+  const summary = structured?.summary ?? null;
+  const segments = structured?.segments ?? [];
+  const painCount = segments.filter((s) => s.type === "pain").length;
+
+  const topQuotes = [...segments]
+    .filter((s) => (s.quote && s.quote.trim().length > 0) || s.text.trim().length > 0)
+    .sort((a, b) => {
+      const typePriority = (t: string) => (t === "pain" ? 0 : 1);
+      const byType = typePriority(a.type) - typePriority(b.type);
+      if (byType !== 0) return byType;
+      return (b.intensity ?? 0) - (a.intensity ?? 0);
+    })
+    .slice(0, 3)
+    .map((s) => ({ ...s, displayQuote: s.quote?.trim() || s.text }));
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <div className="mb-6">
-          <Link
-            href={`/interviews/${projectId}`}
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            ← Back to project
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold mb-1">Interview</h1>
-            <p className="text-sm text-muted-foreground">
-              Submitted on {new Date(interview.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-              interview.status === "structured"
-                ? "bg-green-100 text-green-700"
-                : interview.status === "failed"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {interview.status}
-          </span>
-        </div>
-
-        <div className="border border-border rounded-xl p-6 bg-muted/20">
-          <pre className="text-sm whitespace-pre-wrap font-mono text-foreground leading-relaxed">
-            {interview.raw_text}
-          </pre>
-        </div>
-      </div>
-    </div>
+    <InterviewDetailClient
+      interview={interview}
+      projectId={projectId}
+      summary={summary}
+      topQuotes={topQuotes}
+      painCount={painCount}
+    />
   );
 }
