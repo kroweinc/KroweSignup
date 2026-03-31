@@ -39,7 +39,7 @@ export async function GET(
   }
 
   // 2. Fetch all needed data in parallel
-  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes] = await Promise.all([
+  const [answersRes, decisionResWithAnalysisCols, clustersRes, interviewCountRes, interviewMethodsRes] = await Promise.all([
     supabase
       .from("signup_answers")
       .select("step_key, final_answer")
@@ -63,6 +63,10 @@ export async function GET(
       .from("interviews")
       .select("id", { count: "exact", head: true })
       .eq("project_id", projectId),
+    supabase
+      .from("interviews")
+      .select("current_methods, alternatives_used")
+      .eq("project_id", projectId),
   ]);
 
   let decisionRes = decisionResWithAnalysisCols;
@@ -71,20 +75,45 @@ export async function GET(
     isMissingAnalysisColumnsError(decisionResWithAnalysisCols.error.message)
   ) {
     // Backward-compatible fallback for environments where migration 010 is not applied yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     decisionRes = (await supabase
       .from("decision_outputs")
       .select("reasoning, feature_specs, confidence_score, updated_at")
       .eq("project_id", projectId)
       .order("updated_at", { ascending: false })
-      .limit(1)) as any;
+      .limit(1)) as unknown as typeof decisionResWithAnalysisCols;
   }
 
   const answers = answersRes.data ?? [];
   const decisionRows = decisionRes.data ?? [];
   const decision = decisionRows[0] ?? null;
   const clusters = clustersRes.data ?? [];
+  const interviewMethodsRows = interviewMethodsRes.data ?? [];
   const decisionUpdatedAt = decision?.updated_at ? new Date(decision.updated_at).toISOString() : null;
+
+  const methodsCounts = new Map<string, number>();
+  const alternativesCounts = new Map<string, number>();
+  for (const row of interviewMethodsRows) {
+    const methods = Array.isArray(row.current_methods) ? row.current_methods : [];
+    const alternatives = Array.isArray(row.alternatives_used) ? row.alternatives_used : [];
+    for (const m of methods) {
+      if (typeof m !== "string" || !m.trim()) continue;
+      const key = m.trim();
+      methodsCounts.set(key, (methodsCounts.get(key) ?? 0) + 1);
+    }
+    for (const a of alternatives) {
+      if (typeof a !== "string" || !a.trim()) continue;
+      const key = a.trim();
+      alternativesCounts.set(key, (alternativesCounts.get(key) ?? 0) + 1);
+    }
+  }
+  const currentMethods = [...methodsCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([text]) => text);
+  const alternativesUsed = [...alternativesCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([text]) => text);
 
   // Compute signal metrics from top cluster (always live, not cached)
   const topClusterForMetrics = clusters[0];
@@ -188,6 +217,8 @@ export async function GET(
       supportingQuotes,
       featureSpecs,
       reasoning,
+      currentMethods,
+      alternativesUsed,
     },
   };
 

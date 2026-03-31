@@ -22,6 +22,8 @@ type GenerateDecisionParams = {
     irrelevant: string[];
     missing: string[];
   } | null;
+  currentMethods?: string[];
+  alternativesUsed?: string[];
   confidenceScore?: number;
   confidenceLevel?: "LOW" | "MEDIUM" | "HIGH";
 };
@@ -38,7 +40,18 @@ function formatAlignment(a: AssumptionAnalysis): string {
 export async function generateDecision(
   params: GenerateDecisionParams
 ): Promise<GenerateDecisionResult> {
-  const { cluster, allClusters, founderContext, onboarding, assumptionAnalysis, featureValidation, confidenceScore, confidenceLevel } = params;
+  const {
+    cluster,
+    allClusters,
+    founderContext,
+    onboarding,
+    assumptionAnalysis,
+    featureValidation,
+    currentMethods,
+    alternativesUsed,
+    confidenceScore,
+    confidenceLevel,
+  } = params;
 
   const systemPrompt = [
     "You are a senior product strategist. Generate a complete product specification grounded in real user data.",
@@ -126,6 +139,15 @@ export async function generateDecision(
       ].join("\n")
     : null;
 
+  const transcriptAlternativesText =
+    (currentMethods && currentMethods.length > 0) || (alternativesUsed && alternativesUsed.length > 0)
+      ? [
+          "TRANSCRIPT-DERIVED METHODS & ALTERNATIVES:",
+          `Current methods:\n${(currentMethods ?? []).map((m) => `- ${m}`).join("\n") || "None"}`,
+          `Alternatives used:\n${(alternativesUsed ?? []).map((a) => `- ${a}`).join("\n") || "None"}`,
+        ].join("\n")
+      : null;
+
   const userPrompt = [
     `TOP PROBLEM: ${cluster.canonical_problem}`,
     `Score: ${cluster.score.toFixed(2)} | Frequency: ${cluster.frequency} | Avg Intensity: ${cluster.avg_intensity.toFixed(1)}/5 | Consistency: ${cluster.consistency_score.toFixed(2)}`,
@@ -138,6 +160,7 @@ export async function generateDecision(
     assumptionsText ? `\n${assumptionsText}` : null,
     validationText ? `\n${validationText}` : null,
     featureText ? `\n${featureText}` : null,
+    transcriptAlternativesText ? `\n${transcriptAlternativesText}` : null,
     confidenceText ? `\n${confidenceText}` : null,
   ]
     .filter((x) => x !== null)

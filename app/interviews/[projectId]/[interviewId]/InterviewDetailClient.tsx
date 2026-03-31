@@ -48,7 +48,7 @@ interface Props {
   extractedProblems: ExtractedProblem[];
   intervieweeName: string | null;
   intervieweeContext: string | null;
-  competitorMentions: string[];
+  alternativesUsed: string[];
   currentMethods: string[];
 }
 
@@ -135,7 +135,7 @@ export default function InterviewDetailClient({
   extractedProblems,
   intervieweeName,
   intervieweeContext,
-  competitorMentions,
+  alternativesUsed,
   currentMethods,
 }: Props) {
   const router = useRouter();
@@ -576,18 +576,18 @@ export default function InterviewDetailClient({
                     </div>
 
                     <div className="bg-white p-5 rounded-lg border border-zinc-100 shadow-sm flex flex-col">
-                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Competitors</h4>
+                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Alternatives Used</h4>
                       {interview.status !== "structured" ? (
                         <p className="text-sm text-muted-foreground italic">
-                          Analysis pending — run the pipeline to detect competitors.
+                          Analysis pending — run the pipeline to detect alternatives.
                         </p>
-                      ) : competitorMentions.length === 0 ? (
+                      ) : alternativesUsed.length === 0 ? (
                         <p className="text-sm text-muted-foreground italic">
-                          No competitors mentioned in this interview.
+                          No alternatives mentioned in this interview.
                         </p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
-                          {competitorMentions.map((mention, i) => (
+                          {alternativesUsed.map((mention, i) => (
                             <span key={i} className="px-2 py-1 bg-white border border-zinc-100 shadow-sm text-[10px] font-bold rounded text-on-surface">
                               {mention}
                             </span>

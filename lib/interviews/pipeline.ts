@@ -9,6 +9,7 @@ import { mergeClusterGroups } from "./mergeClusterGroups";
 import { generateDecision } from "./generateDecision";
 import { categorizeClusterGroups } from "./categorizeClusterGroups";
 import { generateMetaClusters } from "./generateMetaClusters";
+import { extractMethodsAlternatives } from "./extractMethodsAlternatives";
 import { runAssumptionMatching } from "@/lib/analysis/assumptionMatching";
 import type { OnboardingData, AssumptionVsEvidenceReport } from "@/lib/analysis/assumptionMatching";
 import { analyzeHypothesisVsReality } from "@/lib/analysis/hypothesisVsReality";
@@ -216,10 +217,13 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       interviewsToProcess.map(async (interview) => {
         try {
           const structured = await structureInterview(interview.raw_text);
+          const methodsAndAlternatives = await extractMethodsAlternatives(interview.raw_text);
           await supabase
             .from("interviews")
             .update({
               structured_segments: structured,
+              current_methods: methodsAndAlternatives.current_methods,
+              alternatives_used: methodsAndAlternatives.alternatives_used,
               status: "structured",
             })
             .eq("id", interview.id);
@@ -430,7 +434,7 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
     // 9. Delete old clusters, insert new ones — run in parallel with founder context query
     let insertedClusters: Array<{ id: string; canonical_problem: string }> = [];
 
-    const [, founderAnswerResult] = await Promise.all([
+    const [, founderAnswerResult, interviewMethodsResult] = await Promise.all([
       (async () => {
         await supabase.from("problem_clusters").delete().eq("project_id", projectId);
         const { data } = await supabase
@@ -461,6 +465,10 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
               "features", "competitors", "alternatives", "pricing_model",
             ])
         : Promise.resolve({ data: null }),
+      supabase
+        .from("interviews")
+        .select("current_methods, alternatives_used")
+        .eq("project_id", projectId),
     ]);
 
     // Merge inserted IDs into categorized clusters using canonical_problem as key
@@ -511,6 +519,34 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       industry: string | null;
     } | null = null;
     let onboarding: OnboardingData | undefined;
+    const projectCurrentMethods = new Map<string, number>();
+    const projectAlternativesUsed = new Map<string, number>();
+
+    const interviewMethodsRows = (interviewMethodsResult as {
+      data: Array<{ current_methods: unknown; alternatives_used: unknown }> | null;
+    }).data ?? [];
+    for (const row of interviewMethodsRows) {
+      const currentMethods = Array.isArray(row.current_methods) ? row.current_methods : [];
+      const alternativesUsed = Array.isArray(row.alternatives_used) ? row.alternatives_used : [];
+      for (const method of currentMethods) {
+        if (typeof method !== "string" || !method.trim()) continue;
+        const key = method.trim();
+        projectCurrentMethods.set(key, (projectCurrentMethods.get(key) ?? 0) + 1);
+      }
+      for (const alternative of alternativesUsed) {
+        if (typeof alternative !== "string" || !alternative.trim()) continue;
+        const key = alternative.trim();
+        projectAlternativesUsed.set(key, (projectAlternativesUsed.get(key) ?? 0) + 1);
+      }
+    }
+    const topCurrentMethods = [...projectCurrentMethods.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([text]) => text);
+    const topAlternativesUsed = [...projectAlternativesUsed.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([text]) => text);
 
     const founderAnswers = (founderAnswerResult as { data: Array<{ step_key: string; final_answer: unknown }> | null }).data;
     if (founderAnswers && founderAnswers.length > 0) {
@@ -611,6 +647,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
       onboarding,
       assumptionAnalysis,
       featureValidation,
+      currentMethods: topCurrentMethods,
+      alternativesUsed: topAlternativesUsed,
       confidenceScore: pipelineConfidenceScore,
       confidenceLevel: pipelineConfidenceLevel,
     });
@@ -661,6 +699,8 @@ export async function runDecisionPipeline(projectId: string, force = false): Pro
               .map((q: { text: string }) => q.text),
             featureSpecs: decision.feature_specs?.map((f: { name: string }) => f.name) ?? [],
             reasoning: Array.isArray(decision.reasoning) ? decision.reasoning : [],
+            currentMethods: topCurrentMethods,
+            alternativesUsed: topAlternativesUsed,
           },
         };
 
