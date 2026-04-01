@@ -8,12 +8,17 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
-  async function fetchScript() {
-    setLoading(true);
+  async function fetchScript(regenerate = false) {
+    if (regenerate) setRegenerating(true);
+    else setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/interviews/script/${projectId}`);
+      const url = regenerate
+        ? `/api/interviews/script/${projectId}?regenerate=true`
+        : `/api/interviews/script/${projectId}`;
+      const res = await fetch(url);
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "Failed to load script");
@@ -25,6 +30,7 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
       setError("Network error — please try again");
     } finally {
       setLoading(false);
+      setRegenerating(false);
     }
   }
 
@@ -97,12 +103,21 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
             A tailored guide for your customer discovery calls.
           </p>
         </div>
-        <button
-          onClick={handleCopy}
-          className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors shrink-0"
-        >
-          {copied ? "Copied!" : "Copy Script"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchScript(true)}
+            disabled={regenerating}
+            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
+          >
+            {regenerating ? "Regenerating…" : "Regenerate"}
+          </button>
+          <button
+            onClick={handleCopy}
+            className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors shrink-0"
+          >
+            {copied ? "Copied!" : "Copy Script"}
+          </button>
+        </div>
       </div>
 
       {/* Intro */}

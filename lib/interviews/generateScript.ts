@@ -118,37 +118,75 @@ export async function generateScript(onboarding: OnboardingData | null): Promise
 
   const featuresStr = onboarding.features.length > 0 ? onboarding.features.join(", ") : "not specified";
 
-  const prompt = `You are an expert customer discovery coach helping a founder prepare for user interviews.
+  const questionFocus = {
+    behavior: true,
+    pain: true,
+    workflow: true,
+    alternatives: true,
+  };
+  void questionFocus;
 
-The founder's startup context:
+  const focusPriority = "Prioritize questions about workflow and analysis process.";
+
+  const featureProbes = onboarding.features
+    .map((f) => `Feature: "${f}" → probe: How do you handle this today? What do you do after this step?`)
+    .join("\n");
+
+  const prompt = `You are generating a customer interview script for a first-time founder using "The Mom Test" principles.
+
+INPUT:
 - Idea: ${onboarding.idea}
-- Problem they're solving: ${onboarding.problem}
-- Target customer: ${onboarding.target_customer}
-- Planned features: ${featuresStr}
+- Problem: ${onboarding.problem}
+- Target Customer: ${onboarding.target_customer}
+- Features: ${featuresStr}
 
-Generate a tailored interview script for this specific founder. The script should help them validate their assumptions and uncover real customer pain points.
+QUESTION FOCUS RULES:
+${focusPriority}
+
+FEATURE-BASED INDIRECT PROBES (use these as inspiration for natural questions):
+${featureProbes || "No specific features listed."}
+
+CONTEXT USAGE RULES:
+- Use context to guide question direction
+- Do NOT pitch, validate, or directly reference the idea in a biased way
+- The interview must feel natural, not like a survey
+
+STRICT RULES:
+- Do NOT ask for opinions (e.g. "Would you use this?")
+- Do NOT ask hypotheticals (e.g. "If this existed...")
+- Do NOT lead toward confirming the idea
+- Focus ONLY on past behavior and real experiences
+- Every question must extract specific, real examples
+
+OUTPUT STRUCTURE (exactly 6 sections):
+1. OPENING (2–3 questions) — casual context-building
+2. INTERVIEWEE BACKGROUND (2–3 questions) — understand their role, experience level, and how relevant this problem is to their day-to-day life; use this to calibrate the rest of the interview
+3. CURRENT BEHAVIOR (3–4 questions) — how they handle the problem today
+4. PAIN & FRICTION (3–4 questions) — where the process breaks down
+5. WORKAROUNDS / ALTERNATIVES (2–3 questions) — hacks and substitutes
+6. IMPACT & PRIORITY (2–3 questions) — frequency and stakes
+
+For EVERY main question include 1–2 follow-up probes such as:
+"Can you walk me through the last time?", "What happened step-by-step?", "Why was that difficult?"
+
+STYLE: Very casual, conversational, human — not scripted or corporate.
 
 Return ONLY valid JSON matching this exact structure:
 {
-  "intro": "string — a 2-3 sentence opening that introduces the interview purpose without revealing the solution",
+  "intro": "2–3 sentence opening that sets a relaxed tone without revealing the solution",
   "sections": [
     {
       "title": "string — section name",
       "questions": [
         {
-          "question": "string — open-ended question",
-          "probes": ["string", "string", "string"] — 2-3 follow-up probes
+          "question": "string — past-behavior, open-ended question",
+          "probes": ["string", "string"]
         }
       ]
     }
   ],
-  "closing": "string — a 2-3 sentence wrap-up that thanks them and asks for follow-up permission"
-}
-
-Include exactly 4 sections: Current Workflow, Pain Points, Solutions Tried, Ideal Outcome.
-Each section should have 2 questions. Each question should have 2-3 probes.
-Make all questions specific to the founder's context — reference their target customer type and problem domain naturally.
-Use conversational, non-leading language. Do NOT mention the startup's solution or product.`;
+  "closing": "2–3 sentence wrap-up that thanks them and asks for referrals"
+}`;
 
   const response = await client.chat.completions.create({
     model: "gpt-4o-mini",

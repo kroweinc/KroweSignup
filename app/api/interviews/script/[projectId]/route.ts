@@ -3,11 +3,13 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { generateScript } from "@/lib/interviews/generateScript";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
   const supabase = createServerSupabaseClient();
+  const { searchParams } = new URL(req.url);
+  const regenerate = searchParams.get("regenerate") === "true";
 
   // 1. Fetch project row
   const projectRes = await supabase
@@ -25,8 +27,8 @@ export async function GET(
     interview_script: unknown;
   };
 
-  // 2. Cache hit — return stored script
-  if (interview_script) {
+  // 2. Cache hit — return stored script (unless regeneration requested)
+  if (interview_script && !regenerate) {
     return NextResponse.json(interview_script);
   }
 
