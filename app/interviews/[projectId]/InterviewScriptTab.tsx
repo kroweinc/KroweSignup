@@ -655,6 +655,8 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-1 min-h-0 w-full flex-col">
+      {/* Non-scrolling overlay wrapper around the scrollable canvas */}
+      <div className="relative flex-1 min-h-0">
       {/* Draggable canvas with immersive grid */}
       <div
         ref={canvasRef}
@@ -669,7 +671,7 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
           stopPanning();
         }}
         tabIndex={0}
-        className={`relative w-full flex-1 min-h-0 overflow-auto select-none outline-none ${isPanning || isDraggingQuestion ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`relative h-full w-full min-h-0 overflow-auto select-none outline-none ${isPanning || isDraggingQuestion ? "cursor-grabbing" : "cursor-grab"}`}
         style={{
           backgroundImage:
             "radial-gradient(circle, rgba(24,24,27,0.18) 1px, transparent 1px), radial-gradient(ellipse at top, rgba(249,115,22,0.08), transparent 50%), linear-gradient(180deg, rgba(250,250,250,0.96), rgba(244,244,245,0.9))",
@@ -800,60 +802,61 @@ export function InterviewScriptTab({ projectId }: { projectId: string }) {
             <div className="h-px min-w-[40vw] shrink-0" />
           </div>
         </DndContext>
-        <div className="pointer-events-none absolute bottom-4 right-4 z-10">
-          <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/70 bg-background/85 p-1 shadow-sm backdrop-blur">
-            <button
-              type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => {
-                const firstNode = flowNodeOrder[0];
-                if (!firstNode) return;
-                setActiveNodeId(firstNode);
-                scrollNodeIntoView(firstNode);
-              }}
-              className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Jump to first question"
-            >
-              Start
-            </button>
-            <button
-              type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => navigateToNodeByStep(-1)}
-              className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Previous question"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => navigateToNodeByStep(1)}
-              className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Next question"
-            >
-              <ChevronRight size={14} />
-            </button>
-            <button
-              type="button"
-              data-no-pan="true"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => {
-                const lastNode = flowNodeOrder[flowNodeOrder.length - 1];
-                if (!lastNode) return;
-                setActiveNodeId(lastNode);
-                scrollNodeIntoView(lastNode);
-              }}
-              className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Jump to last question"
-            >
-              End
-            </button>
-          </div>
+      </div>
+      <div className="pointer-events-none absolute bottom-4 right-4 z-30">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/70 bg-background/85 p-1 shadow-sm backdrop-blur">
+          <button
+            type="button"
+            data-no-pan="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              const firstNode = flowNodeOrder[0];
+              if (!firstNode) return;
+              setActiveNodeId(firstNode);
+              scrollNodeIntoView(firstNode);
+            }}
+            className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Jump to first question"
+          >
+            Start
+          </button>
+          <button
+            type="button"
+            data-no-pan="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => navigateToNodeByStep(-1)}
+            className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Previous question"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            type="button"
+            data-no-pan="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => navigateToNodeByStep(1)}
+            className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Next question"
+          >
+            <ChevronRight size={14} />
+          </button>
+          <button
+            type="button"
+            data-no-pan="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              const lastNode = flowNodeOrder[flowNodeOrder.length - 1];
+              if (!lastNode) return;
+              setActiveNodeId(lastNode);
+              scrollNodeIntoView(lastNode);
+            }}
+            className="rounded-full px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Jump to last question"
+          >
+            End
+          </button>
         </div>
+      </div>
       </div>
     </div>
   );
