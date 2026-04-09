@@ -115,12 +115,6 @@ export default async function DecisionPage({
   const sortedFeatures = [...featureSpecs].sort(
     (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
   );
-  const groupedFeatures = {
-    "must-have": sortedFeatures.filter((f) => f.priority === "must-have"),
-    "should-have": sortedFeatures.filter((f) => f.priority === "should-have"),
-    "nice-to-have": sortedFeatures.filter((f) => f.priority === "nice-to-have"),
-  };
-
   const confidencePct = Math.round((decision.confidence_score ?? 0) * 100);
 
   return (
@@ -131,12 +125,10 @@ export default async function DecisionPage({
       topCluster={topCluster}
       allClusters={allClusters}
       metaClusters={metaClusters}
-      featureSpecs={featureSpecs}
       userFlows={userFlows}
       edgeCases={edgeCases}
       successMetrics={successMetrics}
       sortedFeatures={sortedFeatures}
-      groupedFeatures={groupedFeatures}
       confidencePct={confidencePct}
       interviewsSortedIds={interviewsSortedIds}
     />

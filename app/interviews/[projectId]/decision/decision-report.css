@@ -1,0 +1,51 @@
+/* Scoped styles for interview decision report page only */
+
+.decision-report {
+  --dr-orb-bg: color-mix(in srgb, var(--primary) 88%, white);
+  --dr-orb-text: var(--primary-foreground);
+}
+
+.decision-report .glass-panel {
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.decision-report .signal-glow {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent),
+    0 8px 32px -8px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.decision-report .decision-core-orb {
+  background: radial-gradient(
+    circle at 30% 25%,
+    color-mix(in srgb, var(--primary) 95%, white),
+    var(--primary) 55%,
+    color-mix(in srgb, var(--primary) 75%, black)
+  );
+  color: var(--dr-orb-text);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 12px 40px -12px rgb(0 0 0 / 0.35);
+}
+
+.decision-report .font-headline {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.decision-report .font-label {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.decision-report .laser-line {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tertiary, var(--primary)) 45%, transparent);
+}
+
+.decision-report .confidence-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
