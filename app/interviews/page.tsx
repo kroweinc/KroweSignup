@@ -56,14 +56,12 @@ export default async function InterviewsPage() {
               Turn user interviews into product decisions
             </p>
           </div>
-          {!hasProject && (
-            <Link
-              href="/interviews/new"
-              className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              New Project
-            </Link>
-          )}
+          <Link
+            href="/interviews/new"
+            className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            New Project
+          </Link>
         </div>
 
         {projects.length === 0 ? (
