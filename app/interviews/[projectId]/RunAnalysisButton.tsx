@@ -62,14 +62,14 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
   if (status === "processing") {
     return (
       <div className="flex items-center gap-2">
-        <span className="px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 text-sm font-medium flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+        <span className="px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-semibold flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           Analyzing...
         </span>
         <button
           onClick={() => triggerAnalysis(true)}
           disabled={rerunLoading}
-          className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+          className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
           title="Stop current analysis and rerun from scratch"
         >
           {rerunLoading ? "Restarting..." : "↺ Rerun"}
@@ -83,7 +83,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
       <button
         onClick={() => triggerAnalysis(true)}
         disabled={rerunLoading || interviewCount < 3}
-        className="px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+        className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
         title="Rerun analysis with all interviews"
       >
         {rerunLoading ? "Restarting..." : "↺ Rerun Analysis"}
@@ -95,7 +95,7 @@ export function RunAnalysisButton({ projectId, interviewCount, projectStatus }: 
     <button
       onClick={() => triggerAnalysis(false)}
       disabled={interviewCount < 3 || loading}
-      className="px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+      className="px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 text-white text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
     >
       {loading ? "Starting..." : "Run Analysis"}
     </button>

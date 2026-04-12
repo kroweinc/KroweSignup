@@ -155,7 +155,7 @@ export async function analyzeHypothesisVsReality(
       {
         role: "system",
         content:
-          "You are an expert product decision analyst. Return structured JSON only.",
+          "You are an expert product decision analyst. Return structured JSON only. For breakdown.problemMatch.reasoning, write 1–2 sentences max (under 30 words). Be direct and terse.",
       },
       { role: "user", content: userPrompt },
     ],

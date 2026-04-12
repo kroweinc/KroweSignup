@@ -11,11 +11,17 @@ import type {
   DecisionOutput,
   MetaCluster,
 } from "@/lib/interviews/types";
+import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 
 export const dynamic = "force-dynamic";
 
 type ClusterWithId = ProblemCluster & { id: string };
 type DecisionWithId = Omit<DecisionOutput, "project_id"> & { id: string; updated_at: string };
+type AnalysisDecision = AnalysisResponse["decision"];
+
+function isMissingAnalysisResultColumnError(message: string): boolean {
+  return message.includes("analysis_result");
+}
 
 const priorityOrder: Record<FeatureSpec["priority"], number> = {
   "must-have": 0,
@@ -31,7 +37,7 @@ export default async function DecisionPage({
   const { projectId } = await params;
   const supabase = await createInterviewAuthClient();
 
-  const [projectRes, decisionRes, clustersRes, interviewsRes] = await Promise.all([
+  const [projectRes, decisionResWithAnalysis, clustersRes, interviewsRes] = await Promise.all([
     supabase
       .from("interview_projects")
       .select("id, name")
@@ -40,7 +46,7 @@ export default async function DecisionPage({
     supabase
       .from("decision_outputs")
       .select(
-        "id, selected_cluster_id, reasoning, feature_specs, user_flows, edge_cases, success_metrics, confidence_score, meta_clusters, status, updated_at, created_at"
+        "id, selected_cluster_id, reasoning, feature_specs, user_flows, edge_cases, success_metrics, confidence_score, meta_clusters, status, updated_at, created_at, analysis_result"
       )
       .eq("project_id", projectId)
       .order("updated_at", { ascending: false })
@@ -61,9 +67,27 @@ export default async function DecisionPage({
 
   if (projectRes.error || !projectRes.data) notFound();
 
+  let decisionRes = decisionResWithAnalysis;
+  if (
+    decisionResWithAnalysis.error &&
+    isMissingAnalysisResultColumnError(decisionResWithAnalysis.error.message)
+  ) {
+    decisionRes = (await supabase
+      .from("decision_outputs")
+      .select(
+        "id, selected_cluster_id, reasoning, feature_specs, user_flows, edge_cases, success_metrics, confidence_score, meta_clusters, status, updated_at, created_at"
+      )
+      .eq("project_id", projectId)
+      .order("updated_at", { ascending: false })
+      .limit(1)) as unknown as typeof decisionResWithAnalysis;
+  }
+
   const project = projectRes.data;
-  const decisionRows = (decisionRes.data ?? []) as DecisionWithId[];
+  const decisionRows = (decisionRes.data ?? []) as Array<
+    DecisionWithId & { analysis_result?: AnalysisResponse | null }
+  >;
   const decision: DecisionWithId | null = decisionRows[0] ?? null;
+  const persistedVerdict: AnalysisDecision | null = decisionRows[0]?.analysis_result?.decision ?? null;
   const allClusters = (clustersRes.data ?? []) as ClusterWithId[];
   const interviews = (interviewsRes.data ?? []) as Array<{ id: string; created_at: string }>;
   const interviewsSortedIds = interviews.map((i) => i.id);
@@ -115,12 +139,6 @@ export default async function DecisionPage({
   const sortedFeatures = [...featureSpecs].sort(
     (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
   );
-  const groupedFeatures = {
-    "must-have": sortedFeatures.filter((f) => f.priority === "must-have"),
-    "should-have": sortedFeatures.filter((f) => f.priority === "should-have"),
-    "nice-to-have": sortedFeatures.filter((f) => f.priority === "nice-to-have"),
-  };
-
   const confidencePct = Math.round((decision.confidence_score ?? 0) * 100);
 
   return (
@@ -131,14 +149,13 @@ export default async function DecisionPage({
       topCluster={topCluster}
       allClusters={allClusters}
       metaClusters={metaClusters}
-      featureSpecs={featureSpecs}
       userFlows={userFlows}
       edgeCases={edgeCases}
       successMetrics={successMetrics}
       sortedFeatures={sortedFeatures}
-      groupedFeatures={groupedFeatures}
       confidencePct={confidencePct}
       interviewsSortedIds={interviewsSortedIds}
+      persistedVerdict={persistedVerdict}
     />
   );
 }

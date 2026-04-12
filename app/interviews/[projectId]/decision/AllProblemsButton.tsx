@@ -23,7 +23,7 @@ export function AllProblemsButton({ allClusters }: { allClusters: ClusterWithId[
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="dr-body-text text-xs transition-colors hover:opacity-80"
       >
         View All Problems →
       </button>
