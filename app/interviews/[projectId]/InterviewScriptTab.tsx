@@ -419,12 +419,14 @@ export function InterviewScriptTab({
   if (!script) return null;
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col bg-gradient-to-b from-background via-muted/20 to-muted/30">
+    <div className="flex flex-1 min-h-0 w-full flex-col bg-background">
       {/* Founder Console header */}
-      <div className="shrink-0 border-b border-border/70 bg-background/90 px-4 py-3 md:px-5">
+      <div className="shrink-0 border-b border-border/60 bg-background px-4 py-3.5 md:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Founder Console</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Founder Console
+            </p>
             <nav className="flex items-center gap-1 border-b border-transparent">
               {(
                 [
@@ -438,7 +440,7 @@ export function InterviewScriptTab({
                   onClick={() => setConsoleTab(id)}
                   className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
                     consoleTab === id
-                      ? "border-[#FF6A4D] text-foreground"
+                      ? "border-interview-brand text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -452,13 +454,13 @@ export function InterviewScriptTab({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search canvas…"
-              className="h-9 w-full min-w-[12rem] max-w-xs rounded-full border border-border/80 bg-background px-3 text-xs outline-none focus:border-[#FF6A4D]/60 focus:ring-2 focus:ring-[#FF6A4D]/15"
+              className="h-9 w-full min-w-[12rem] max-w-xs rounded-full border border-border/80 bg-background px-3 text-xs outline-none transition focus:border-interview-brand/50 focus:ring-2 focus:ring-interview-brand/10"
               aria-label="Search canvas"
             />
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#ff6a4d] to-[#ff874d] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95"
             >
               {copied ? "Copied" : "Deploy script"}
             </button>
@@ -466,7 +468,7 @@ export function InterviewScriptTab({
               type="button"
               onClick={() => fetchScript(true)}
               disabled={regenerating}
-              className="rounded-full border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+              className="rounded-full border border-border/80 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50"
             >
               {regenerating ? "Regenerating…" : "Regenerate"}
             </button>
@@ -648,7 +650,7 @@ function FlowCanvasInner({
                   fitView({ padding: 0.18, duration: 240, minZoom: 0.12, maxZoom: 1.6 })
                 );
               }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FF6A4D]/15 text-[#FF6A4D] hover:bg-[#FF6A4D]/25"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-interview-brand/15 text-interview-brand hover:bg-interview-brand/25"
             >
               <PenLine size={16} strokeWidth={2} />
             </button>

@@ -129,16 +129,18 @@ function reasoningToStringParts(reasoning: unknown): string[] {
   return [];
 }
 
-function buildNarrativeText(decision: DecisionWithId, analysisResult: AnalysisResponse | null): string {
+function getReasoningDisplayItems(
+  decision: DecisionWithId,
+  analysisResult: AnalysisResponse | null
+): string[] {
   const fromReasoning = reasoningToStringParts(decision.reasoning)
     .map(sanitizeReasoningString)
-    .filter(Boolean)
-    .join(" ");
-  if (fromReasoning) return fromReasoning;
-  const rec = (analysisResult?.recommendation ?? [])
-    .map(sanitizeReasoningString)
     .filter(Boolean);
-  return rec.slice(0, 3).join(" ");
+  if (fromReasoning.length > 0) return fromReasoning;
+  return (analysisResult?.recommendation ?? [])
+    .map(sanitizeReasoningString)
+    .filter(Boolean)
+    .slice(0, 3);
 }
 
 function formatDecisionTimestamp(iso: string) {
@@ -186,16 +188,16 @@ function ImpactDistribution({ bars, loading }: { bars: ImpactBar[]; loading: boo
   }
 
   const barClass = (tone: ImpactBar["tone"]) => {
-    if (tone === "tertiary") return "bg-teal-600/80";
-    if (tone === "primarySoft") return "bg-orange-400/80";
-    return "bg-primary/80";
+    if (tone === "tertiary") return "dr-impact-fill-muted";
+    if (tone === "primarySoft") return "dr-impact-fill-soft";
+    return "dr-impact-fill laser-line";
   };
 
   return (
     <div className="space-y-3">
       {bars.map((b) => (
         <div key={b.label} className="flex items-center gap-4">
-          <span className="font-label w-20 text-[9px] uppercase tracking-wide text-muted-foreground opacity-80">
+          <span className="font-label w-20 text-[9px] uppercase tracking-wide opacity-90">
             {b.label}
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -224,26 +226,26 @@ function VoiceQuoteCard({
   isParaphrased?: boolean;
 }) {
   return (
-    <div className="glass-panel hover:signal-glow rounded-xl border border-border/30 p-5 transition-all">
-      <span className="material-symbols-outlined mb-4 block text-primary/40">format_quote</span>
+    <div className="dr-quote-card dr-panel-rounded">
+      <span className="dr-quote-icon material-symbols-outlined mb-4 block">format_quote</span>
       {rankLabel && (
-        <span className="font-label mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="font-label mb-2 block text-[10px] font-semibold uppercase tracking-wide">
           {rankLabel}
         </span>
       )}
-      <p className="font-headline text-sm leading-relaxed text-foreground/90">
+      <p className="dr-body-text text-sm leading-relaxed">
         &ldquo;{quote.text}&rdquo;
       </p>
-      <div className="mt-4 flex items-center gap-3 border-t border-border/30 pt-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-          <span className="font-label text-[10px] text-muted-foreground">#</span>
+      <div className="mt-4 flex items-center gap-3 border-t border-[color:color-mix(in_srgb,var(--dr-rule)_75%,transparent)] pt-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--dr-rule)_55%,#fff)]">
+          <span className="font-label text-[10px]">#</span>
         </div>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+        <span className="font-label text-[10px] font-bold uppercase tracking-widest">
           {interviewLabel}
         </span>
       </div>
       {isParaphrased && (
-        <span className="mt-2 block text-[10px] uppercase tracking-wide text-muted-foreground/70">
+        <span className="dr-body-text mt-2 block text-[10px] uppercase tracking-wide opacity-80">
           Paraphrased summary
         </span>
       )}
@@ -272,8 +274,8 @@ export function DecisionPageClient({
   const [analysisError, setAnalysisError] = useState("");
   const requestIdRef = useRef(0);
 
-  const narrativeText = useMemo(
-    () => buildNarrativeText(decision, analysisResult),
+  const reasoningDisplayItems = useMemo(
+    () => getReasoningDisplayItems(decision, analysisResult),
     [decision, analysisResult]
   );
 
@@ -387,7 +389,7 @@ export function DecisionPageClient({
     }
     if (analysisState === "error") {
       return (
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="dr-body-text text-sm leading-relaxed">
           Interview signal summary is unavailable. Problem scores below still reflect your latest
           analysis run.
         </p>
@@ -395,20 +397,20 @@ export function DecisionPageClient({
     }
     if (analysisResult?.breakdown.problemMatch.reasoning) {
       return (
-        <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="dr-body-text line-clamp-3 text-sm leading-relaxed">
           {analysisResult.breakdown.problemMatch.reasoning}
         </p>
       );
     }
     if (topCluster) {
       return (
-        <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="dr-body-text line-clamp-3 text-sm leading-relaxed">
           Overall cluster score {topCluster.score.toFixed(2)} — frequency {topCluster.frequency},
           consistency {Math.round(topCluster.consistency_score * 100)}%.
         </p>
       );
     }
-    return <p className="text-sm text-muted-foreground">No signal summary.</p>;
+    return <p className="dr-body-text text-sm">No signal summary.</p>;
   };
 
   const signalBadge = () => {
@@ -429,11 +431,11 @@ export function DecisionPageClient({
       return (
         <div className="space-y-6">
           {[0, 1, 2].map((card) => (
-            <div key={card} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="border-b border-border bg-muted/30 px-5 py-3">
+            <div key={card} className="dr-panel dr-panel-rounded overflow-hidden">
+              <div className="border-b border-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] px-5 py-3">
                 <SkeletonLine className="h-3 w-32" />
               </div>
-              <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0">
+              <div className="grid grid-cols-1 divide-y divide-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] md:grid-cols-2 md:divide-x md:divide-y-0">
                 <div className="space-y-2 p-8">
                   <SkeletonLine className="mb-3 h-3 w-24" />
                   <SkeletonLine />
@@ -453,7 +455,7 @@ export function DecisionPageClient({
 
     if (analysisState === "error") {
       return (
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-6">
+        <div className="dr-panel dr-panel-rounded flex flex-col gap-3 p-6">
           <p className="text-sm text-red-600">
             {analysisError === "No onboarding data linked"
               ? "No onboarding data linked to this project."
@@ -487,31 +489,31 @@ export function DecisionPageClient({
       <div>
         <div className="mb-2 pl-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
               {title}
             </span>
             {badge}
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border/30 bg-border/30 shadow-sm md:grid-cols-2">
-          <div className="bg-card/90 p-8 transition-colors hover:bg-card md:p-10">
+        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[color:color-mix(in_srgb,var(--dr-rule)_85%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-rule)_55%,transparent)] md:grid-cols-2">
+          <div className="bg-[var(--dr-surface)] p-8 md:p-10">
             <div className="mb-6 flex items-center gap-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em]">
                 Your hypothesis
               </span>
             </div>
-            <div className="font-headline text-xl font-medium italic leading-relaxed text-foreground/80">
+            <div className="font-headline text-xl font-medium italic leading-relaxed">
               {left}
             </div>
           </div>
-          <div className="bg-card/90 p-8 transition-colors hover:bg-card md:p-10">
+          <div className="bg-[var(--dr-surface)] p-8 md:p-10">
             <div className="mb-6 flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">{icon}</span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80">
+              <span className="material-symbols-outlined text-[color:var(--dr-bullet)]">{icon}</span>
+              <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
                 What interviews support
               </span>
             </div>
-            <div className="font-headline text-xl font-medium leading-relaxed text-primary">
+            <div className="font-headline dr-bullet-text text-xl font-medium leading-relaxed">
               {right}
             </div>
           </div>
@@ -522,24 +524,26 @@ export function DecisionPageClient({
     const problemRight = (
       <div className="space-y-3 not-italic">
         {context.topProblem ? (
-          <p className="text-xl font-medium leading-relaxed">{context.topProblem}</p>
+          <p className="dr-body-text text-xl font-medium leading-relaxed">{context.topProblem}</p>
         ) : null}
         {context.topQuotes.map((quote, index) => (
           <p
             key={index}
-            className="border-l-2 border-primary/40 pl-3 text-base italic text-muted-foreground"
+            className="dr-body-text border-l-2 border-[color:var(--dr-rule)] pl-3 text-base italic"
           >
             &ldquo;{quote.text}&rdquo;
           </p>
         ))}
         {!context.topProblem && context.topQuotes.length === 0 && (
-          <p className="text-base text-muted-foreground">No interview data</p>
+          <p className="dr-body-text text-base">No interview data</p>
         )}
       </div>
     );
 
     const customerRight = (
-      <p className="text-xl font-medium leading-relaxed not-italic">{context.customerInsight || "—"}</p>
+      <p className="dr-body-text text-xl font-medium leading-relaxed not-italic">
+        {context.customerInsight || "—"}
+      </p>
     );
 
     const solutionRight = (
@@ -551,13 +555,13 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.relevant.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.relevant.map((feature, index) => (
-                <li key={index} className="text-base text-foreground/90">
+                <li key={index} className="dr-body-text text-base">
                   {feature}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None listed</p>
+            <p className="dr-body-text text-sm">None listed</p>
           )}
         </div>
         <div>
@@ -567,13 +571,13 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.missing.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.missing.map((feature, index) => (
-                <li key={index} className="text-base text-foreground/90">
+                <li key={index} className="dr-body-text text-base">
                   {feature}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None listed</p>
+            <p className="dr-body-text text-sm">None listed</p>
           )}
         </div>
         <div>
@@ -583,13 +587,13 @@ export function DecisionPageClient({
           {breakdown.featureRelevance.unnecessary.length > 0 ? (
             <ul className="space-y-1">
               {breakdown.featureRelevance.unnecessary.map((feature, index) => (
-                <li key={index} className="text-base text-foreground/90">
+                <li key={index} className="dr-body-text text-base">
                   {feature}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None listed</p>
+            <p className="dr-body-text text-sm">None listed</p>
           )}
         </div>
       </div>
@@ -608,7 +612,7 @@ export function DecisionPageClient({
           />
         )}
         {breakdown.problemMatch.reasoning && (
-          <p className="px-1 text-xs text-muted-foreground">{breakdown.problemMatch.reasoning}</p>
+          <p className="dr-body-text px-1 text-xs">{breakdown.problemMatch.reasoning}</p>
         )}
 
         {rowShell(
@@ -622,9 +626,7 @@ export function DecisionPageClient({
           />
         )}
         {breakdown.customerAlignment.reasoning && (
-          <p className="px-1 text-xs text-muted-foreground">
-            {breakdown.customerAlignment.reasoning}
-          </p>
+          <p className="dr-body-text px-1 text-xs">{breakdown.customerAlignment.reasoning}</p>
         )}
 
         {rowShell(
@@ -633,7 +635,7 @@ export function DecisionPageClient({
             {context.founderFeatures.length > 0 ? (
               <ul className="list-inside list-disc space-y-1">
                 {context.founderFeatures.map((feature, index) => (
-                  <li key={index} className="text-xl font-medium text-foreground/80">
+                  <li key={index} className="font-headline text-xl font-medium">
                     {feature}
                   </li>
                 ))}
@@ -654,41 +656,41 @@ export function DecisionPageClient({
   return (
     <main className="decision-report font-sans relative min-h-screen overflow-hidden bg-background">
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-10 flex flex-col gap-4 border-b border-border/40 pb-8 md:flex-row md:items-end md:justify-between">
+        <div className="mb-10 flex flex-col gap-4 border-b border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] pb-8 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <Link
                 href={`/interviews/${projectId}`}
-                className="text-xs text-muted-foreground hover:underline"
+                className="dr-body-text text-xs hover:underline"
               >
                 Back to project
               </Link>
-              <span className="text-xs text-muted-foreground/40">·</span>
+              <span className="dr-body-text text-xs opacity-40">·</span>
               <button
                 type="button"
                 onClick={async () => {
                   await supabase.auth.signOut();
                   router.push("/auth/signin");
                 }}
-                className="text-xs text-muted-foreground hover:underline"
+                className="dr-body-text text-xs hover:underline"
               >
                 Log out
               </button>
             </div>
-            <h1 className="font-headline text-xl font-bold text-foreground">{project.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Interview decision report</p>
+            <h1 className="font-headline text-xl font-bold">{project.name}</h1>
+            <p className="dr-body-text mt-1 text-sm">Interview decision report</p>
           </div>
         </div>
 
         {/* Verdict */}
         <section className="mb-16">
-          <div className="flex flex-col items-center gap-8 md:flex-row md:items-center">
+          <div className="flex flex-col items-center gap-14 md:flex-row md:items-start md:gap-16 lg:gap-20">
             {/* Left: orb */}
             <div className="shrink-0 flex flex-col items-center">
               <div className="relative flex h-64 w-64 items-center justify-center">
-                <svg className="absolute inset-0 h-full w-full p-2 opacity-10" viewBox="0 0 320 320">
+                <svg className="absolute inset-0 h-full w-full p-2 opacity-[0.35]" viewBox="0 0 320 320">
                   <circle
-                    className="text-primary"
+                    className="decision-ring-track"
                     cx="160"
                     cy="160"
                     r={RING_R}
@@ -699,7 +701,7 @@ export function DecisionPageClient({
                 </svg>
                 <svg className="absolute inset-0 h-full w-full p-2" viewBox="0 0 320 320">
                   <circle
-                    className="text-primary confidence-ring"
+                    className="decision-ring-progress confidence-ring"
                     cx="160"
                     cy="160"
                     r={RING_R}
@@ -713,46 +715,58 @@ export function DecisionPageClient({
                   />
                 </svg>
                 <div className="decision-core-orb relative z-10 flex h-52 w-52 flex-col items-center justify-center rounded-full">
-                  <span className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.35em] text-white/70">
+                  <span className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.35em]">
                     Verdict
                   </span>
-                  <h2 className="font-headline text-4xl font-bold italic tracking-tight text-white drop-shadow-md md:text-5xl">
+                  <h2 className="font-headline text-4xl font-bold tracking-tight md:text-5xl">
                     {verdictLabel}
                   </h2>
                 </div>
                 <div className="absolute -top-4 right-0 text-right">
-                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em]">
                     Confidence
                   </span>
                   {analysisState === "loading" ? (
                     <SkeletonLine className="ml-auto h-8 w-20" />
                   ) : (
-                    <span className="font-label text-2xl font-bold text-primary">
+                    <span className="font-headline dr-bullet-text text-2xl font-bold">
                       {displayConfidencePct.toFixed(1)}%
                     </span>
                   )}
                 </div>
                 <div className="absolute -bottom-4 left-0 text-left">
-                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80">
+                  <span className="font-label mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
                     Report status
                   </span>
-                  <span className="font-label text-xs uppercase tracking-widest text-muted-foreground">
+                  <span className="font-label text-xs uppercase tracking-widest">
                     Analysis complete · Final
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: narrative only */}
+            {/* Right: why this decision */}
             <div className="flex flex-1 flex-col gap-4">
-              <div className="glass-panel signal-glow rounded-r-xl border-l-4 border-primary p-6 text-left">
-                <p className="font-label mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  Reasoning
-                </p>
-                <p className="font-headline text-base leading-relaxed text-foreground/90 md:text-lg">
-                  {narrativeText || "—"}
-                </p>
-              </div>
+              <section className="why-decision-panel rounded-r-xl p-6 pl-8 text-left md:ml-24 lg:ml-32 xl:ml-40 2xl:ml-44">
+                <h2 className="font-headline mb-5 text-xl leading-tight md:text-[1.35rem]">
+                  Why this decision
+                </h2>
+                {reasoningDisplayItems.length > 0 ? (
+                  <ul className="why-decision-list space-y-4">
+                    {reasoningDisplayItems.map((item, i) => (
+                      <li key={i} className="why-decision-item flex gap-3 text-[15px] leading-relaxed">
+                        <span
+                          className="why-decision-bullet mt-[0.45em] h-1.5 w-1.5 shrink-0 rounded-full"
+                          aria-hidden
+                        />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="why-decision-empty text-[15px] leading-relaxed">—</p>
+                )}
+              </section>
 
               {analysisState === "loading" && (
                 <div className="space-y-2 text-left">
@@ -761,8 +775,8 @@ export function DecisionPageClient({
                 </div>
               )}
               {analysisState === "error" && (
-                <p className="text-sm text-muted-foreground">
-                  AI recommendations are unavailable. The narrative above is from your generated
+                <p className="dr-body-text text-sm">
+                  AI recommendations are unavailable. The reasoning above is from your generated
                   decision; rerun analysis after linking onboarding if needed.
                 </p>
               )}
@@ -771,15 +785,18 @@ export function DecisionPageClient({
 
           {/* Next steps — full width below */}
           {analysisState === "ready" && analysisResult?.recommendation?.length ? (
-            <div className="glass-panel mt-16 rounded-xl p-5 text-left">
-              <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="dr-panel dr-panel-rounded mt-16 text-left">
+              <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
                 Next steps
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {analysisResult.recommendation.map((rec, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-foreground/90">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span className="leading-relaxed">{rec}</span>
+                  <li key={index} className="flex items-start gap-3 text-sm">
+                    <span
+                      className="dr-next-bullet mt-[0.45em] h-1.5 w-1.5 shrink-0 rounded-full"
+                      aria-hidden
+                    />
+                    <span className="dr-body-text leading-relaxed">{rec}</span>
                   </li>
                 ))}
               </ul>
@@ -790,34 +807,33 @@ export function DecisionPageClient({
         {/* Top problem + landscape */}
         <div className="mb-14 grid grid-cols-1 gap-8 md:grid-cols-12">
           <div className="md:col-span-7">
-            <span className="font-label mb-4 block text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700">
+            <span className="font-label mb-4 block text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--dr-bullet)]">
               Primary friction
             </span>
-            <h3 className="font-headline mb-6 text-2xl text-foreground md:text-3xl">Top problem</h3>
+            <h3 className="font-headline mb-6 text-2xl md:text-3xl">Top problem</h3>
             {topCluster ? (
               <div className="space-y-6">
-                <div className="group relative overflow-hidden rounded-lg border border-border/40 bg-card p-4 shadow-sm">
-                  <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/5 blur-3xl transition-colors group-hover:bg-primary/10" />
-                  <h4 className="font-label mb-3 text-xs font-bold uppercase tracking-widest text-primary">
+                <div className="dr-panel dr-panel-rounded relative overflow-hidden">
+                  <h4 className="font-label mb-3 text-xs font-bold uppercase tracking-widest text-[color:var(--dr-bullet)]">
                     {topCluster.category ? `${topCluster.category} · ` : ""}
                     Interview signal
                   </h4>
-                  <p className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  <p className="font-label mb-1 text-[10px] font-bold uppercase tracking-[0.2em]">
                     #1 Top Problem
                   </p>
-                  <p className="font-headline text-lg font-semibold leading-snug text-foreground">
+                  <p className="font-headline text-lg font-semibold leading-snug">
                     {topCluster.canonical_problem}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">{signalBadge()}</div>
-                  <div className="relative mt-4 text-sm text-muted-foreground">{signalCardBody()}</div>
+                  <div className="relative mt-4 text-sm">{signalCardBody()}</div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between px-2">
-                    <span className="font-label text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                    <span className="font-label text-[10px] uppercase tracking-wide">
                       Evidence mix
                     </span>
-                    <span className="font-label text-[10px] font-bold text-teal-700">
+                    <span className="font-label text-[10px] font-bold text-[color:var(--dr-bullet)]">
                       {analysisState === "ready" ? "Live" : analysisState === "loading" ? "…" : "Partial"}
                     </span>
                   </div>
@@ -828,34 +844,34 @@ export function DecisionPageClient({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="dr-body-text text-sm">
                 No clustered problem yet. Add interviews and rerun analysis.
               </p>
             )}
           </div>
 
-          <div className="glass-panel md:col-span-5 rounded-xl border border-border/40 p-5">
-            <span className="font-label mb-6 block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="dr-panel md:col-span-5 dr-panel-rounded">
+            <span className="font-label mb-6 block text-[10px] font-bold uppercase tracking-[0.2em]">
               Problem landscape
             </span>
             {landscapeItems.length > 0 ? (
               <div className="space-y-8">
                 {landscapeItems.map((mc, i) => (
                   <div key={mc.id} className="flex gap-4">
-                    <span className="font-label text-2xl font-bold text-primary">
+                    <span className="font-headline dr-bullet-text text-2xl font-bold">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <div>
-                      <h5 className="mb-1 text-sm font-bold uppercase tracking-tight text-foreground">
+                      <h5 className="font-headline mb-1 text-sm font-bold uppercase tracking-tight">
                         {mc.title}
                       </h5>
-                      <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{mc.description}</p>
+                      <p className="dr-body-text line-clamp-3 text-xs leading-relaxed">{mc.description}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No grouped themes yet.</p>
+              <p className="dr-body-text text-sm">No grouped themes yet.</p>
             )}
             {allClusters.length > 0 && (
               <div className="mt-6 flex justify-end">
@@ -869,9 +885,7 @@ export function DecisionPageClient({
         {topCluster && (
           <section className="mb-14">
             <div className="mb-6 text-center">
-              <h3 className="font-headline text-2xl text-foreground md:text-3xl">
-                Voice of the customer
-              </h3>
+              <h3 className="font-headline text-2xl md:text-3xl">Voice of the customer</h3>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {(() => {
@@ -883,12 +897,12 @@ export function DecisionPageClient({
                     return (
                       <div
                         key={index}
-                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-border/50 bg-muted/20 p-8"
+                        className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-[color:color-mix(in_srgb,var(--dr-rule)_90%,transparent)] bg-[color:color-mix(in_srgb,var(--dr-rule)_22%,#fff)] p-8"
                       >
-                        <span className="font-label mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        <span className="font-label mb-1 text-[10px] font-semibold uppercase tracking-wide">
                           {rankLabels[index]}
                         </span>
-                        <span className="text-xs text-muted-foreground">No quote</span>
+                        <span className="dr-body-text text-xs">No quote</span>
                       </div>
                     );
                   }
@@ -914,10 +928,8 @@ export function DecisionPageClient({
         {/* Hypothesis vs reality */}
         <section className="mb-14">
           <div className="mb-6 text-center">
-            <h3 className="font-headline text-2xl text-foreground md:text-3xl">
-              Hypothesis vs reality
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h3 className="font-headline text-2xl md:text-3xl">Hypothesis vs reality</h3>
+            <p className="dr-body-text mt-2 text-sm">
               How your onboarding assumptions compare to what people said in interviews.
             </p>
           </div>
@@ -927,69 +939,66 @@ export function DecisionPageClient({
         {/* What to build + flows */}
         <div className="mb-14 grid grid-cols-1 items-start gap-8 md:grid-cols-12">
           <div className="md:col-span-8">
-            <h3 className="font-headline mb-8 text-2xl text-foreground md:text-3xl">What to build</h3>
+            <h3 className="font-headline mb-8 text-2xl md:text-3xl">What to build</h3>
             {sortedFeatures.length > 0 ? (
               <div className="space-y-4">
                 {sortedFeatures.map((feature, index) => (
                   <div
                     key={`${feature.name}-${index}`}
-                    className="group flex cursor-default items-center justify-between rounded-lg border border-border/40 bg-card p-4 shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5"
+                    className="dr-panel dr-panel-rounded group flex cursor-default items-center justify-between transition-colors hover:border-l-[color:var(--dr-bullet)]"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="material-symbols-outlined text-primary transition-transform group-hover:scale-110">
+                    <div className="flex flex-1 items-center gap-4 pr-2">
+                      <span
+                        className="material-symbols-outlined text-[color:var(--dr-bullet)] transition-transform group-hover:scale-110"
+                        aria-hidden
+                      >
                         {PRIORITY_ICONS[feature.priority]}
                       </span>
                       <div className="text-left">
-                        <h4 className="text-sm font-bold uppercase tracking-wide text-foreground">
+                        <h4 className="font-headline text-sm font-bold uppercase tracking-wide">
                           {feature.name}
                         </h4>
-                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                        <p className="dr-body-text text-xs">{feature.description}</p>
                       </div>
                     </div>
-                    <span className="material-symbols-outlined text-muted-foreground/30">chevron_right</span>
+                    <span className="material-symbols-outlined opacity-30" aria-hidden>
+                      chevron_right
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No feature specs in this decision.</p>
+              <p className="dr-body-text text-sm">No feature specs in this decision.</p>
             )}
           </div>
 
           <div className="md:col-span-4">
-            <h3 className="font-headline mb-8 text-2xl text-foreground md:text-3xl">User flows</h3>
+            <h3 className="font-headline mb-8 text-2xl md:text-3xl">User flows</h3>
             {flowTimeline.steps.length > 0 ? (
               <div>
                 {flowTimeline.title && (
-                  <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="font-label mb-4 text-[10px] font-bold uppercase tracking-widest">
                     {flowTimeline.title}
                   </p>
                 )}
-                <div className="relative space-y-12 border-l border-border/50 py-4 pl-8">
+                <div className="relative space-y-12 border-l border-[color:var(--dr-rule)] py-4 pl-8">
                   {flowTimeline.steps.map((step, i) => (
                     <div key={i} className="relative">
                       <div
                         className={`absolute -left-[37px] top-0 h-2 w-2 rounded-full ${
-                          i === 0
-                            ? "bg-primary signal-glow"
-                            : i === 1
-                              ? "bg-teal-600"
-                              : "bg-muted-foreground/50"
+                          i === 0 ? "bg-[color:var(--dr-bullet)] signal-glow" : "bg-[color:color-mix(in_srgb,var(--dr-body)_40%,transparent)]"
                         }`}
                       />
-                      <h5
-                        className={`font-label mb-2 text-[10px] font-bold uppercase tracking-widest ${
-                          i === 0 ? "text-primary" : i === 1 ? "text-teal-700" : "text-muted-foreground"
-                        }`}
-                      >
+                      <h5 className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest">
                         Step {i + 1}
                       </h5>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{step}</p>
+                      <p className="dr-body-text text-xs leading-relaxed">{step}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No user flows in this decision.</p>
+              <p className="dr-body-text text-sm">No user flows in this decision.</p>
             )}
           </div>
         </div>
@@ -997,19 +1006,19 @@ export function DecisionPageClient({
         {/* Edge cases + metrics */}
         <div className="mb-10 grid grid-cols-1 gap-12 md:grid-cols-2">
           <div>
-            <h3 className="font-headline mb-8 text-2xl text-foreground md:text-3xl">Edge cases</h3>
+            <h3 className="font-headline mb-8 text-2xl md:text-3xl">Edge cases</h3>
             {edgeCases.length > 0 ? (
-              <div className="rounded-xl border border-border/40 bg-card p-5 shadow-sm">
+              <div className="dr-panel dr-panel-rounded">
                 <ul className="space-y-4">
                   {edgeCases.map((edge, index) => (
                     <li key={index} className="flex gap-4">
-                      <span className="material-symbols-outlined shrink-0 text-sm text-primary">
+                      <span className="material-symbols-outlined shrink-0 text-sm text-[color:var(--dr-bullet)]">
                         warning
                       </span>
                       <div>
-                        <p className="text-sm text-foreground/90">{edge.scenario}</p>
+                        <p className="dr-body-text text-sm">{edge.scenario}</p>
                         {edge.mitigation && (
-                          <p className="mt-1 text-xs text-muted-foreground">{edge.mitigation}</p>
+                          <p className="dr-body-text mt-1 text-xs opacity-90">{edge.mitigation}</p>
                         )}
                       </div>
                     </li>
@@ -1017,27 +1026,27 @@ export function DecisionPageClient({
                 </ul>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">None listed.</p>
+              <p className="dr-body-text text-sm">None listed.</p>
             )}
           </div>
 
           <div>
-            <h3 className="font-headline mb-8 text-2xl text-foreground md:text-3xl">
-              Success metrics
-            </h3>
+            <h3 className="font-headline mb-8 text-2xl md:text-3xl">Success metrics</h3>
             {successMetrics.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {successMetrics.map((metric, index) => (
                   <div
                     key={index}
-                    className="rounded-lg border border-white/50 bg-muted/50 p-4 text-center shadow-sm"
+                    className="dr-panel dr-panel-rounded text-center"
                   >
-                    <p className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <p className="font-label mb-2 text-[10px] font-bold uppercase tracking-widest">
                       {metric.metric}
                     </p>
-                    <span className="text-xl font-bold text-teal-700 md:text-2xl">{metric.target}</span>
+                    <span className="font-headline dr-success-metric-value text-xl font-bold md:text-2xl">
+                      {metric.target}
+                    </span>
                     {metric.rationale && (
-                      <p className="mt-2 text-left text-[11px] leading-snug text-muted-foreground">
+                      <p className="dr-body-text mt-2 text-left text-[11px] leading-snug">
                         {metric.rationale}
                       </p>
                     )}
@@ -1045,18 +1054,18 @@ export function DecisionPageClient({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">None listed.</p>
+              <p className="dr-body-text text-sm">None listed.</p>
             )}
           </div>
         </div>
 
-        <div className="mt-20 h-px w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-40" />
-        <footer className="flex flex-col gap-4 py-12 opacity-80 md:flex-row md:items-center md:justify-between">
-          <span className="font-label text-[9px] uppercase tracking-[0.3em] text-muted-foreground">
+        <div className="mt-20 h-px w-full bg-gradient-to-r from-transparent via-[color:color-mix(in_srgb,var(--dr-rule)_80%,transparent)] to-transparent opacity-80" />
+        <footer className="flex flex-col gap-4 py-12 md:flex-row md:items-center md:justify-between">
+          <span className="font-label text-[9px] uppercase tracking-[0.3em]">
             Krowe · Interview decision · {projectId}
           </span>
           <div className="flex flex-wrap gap-4">
-            <span className="font-label text-[9px] uppercase tracking-[0.3em] text-muted-foreground">
+            <span className="font-label text-[9px] uppercase tracking-[0.3em]">
               Updated {formatDecisionTimestamp(decision.updated_at)}
             </span>
           </div>

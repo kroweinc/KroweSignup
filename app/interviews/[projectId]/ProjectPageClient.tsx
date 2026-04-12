@@ -105,7 +105,7 @@ function initialForName(name: string | null, fallbackIndex: number) {
 }
 
 function signalBadgeClasses(label: InterviewSignalLabel) {
-  if (label === "High") return "bg-[#FFEAE5] text-[#FF6A4D]";
+  if (label === "High") return "bg-orange-50 text-interview-brand";
   if (label === "Medium") return "bg-gray-100 text-gray-600";
   return "bg-red-50 text-red-600";
 }
@@ -178,26 +178,32 @@ export function ProjectPageClient({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Constrained header section */}
-      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-5 pt-12 pb-0">
+      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-5 pt-10 md:pt-12 pb-0">
         <div className="max-w-3xl">
           {/* Back link */}
-          <div className="mb-6">
+          <div className="mb-5">
             <Link href="/interviews" className="text-xs text-muted-foreground hover:underline">
               ← All projects
             </Link>
           </div>
 
-          {/* Project header */}
-          <div className="flex items-start gap-3 mb-7">
-            <div className="mb-1">
-              <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-0.5">
+          {/* Project header — serif/sans pairing like upload flow */}
+          <div className="flex items-start gap-3 mb-10">
+            <div className="mb-1 min-w-0">
+              <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">
                 Project
               </p>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight leading-tight">{project.name}</h1>
+              <div className="flex flex-wrap items-center gap-3 gap-y-2">
+                <h1 className="serif-text text-[24px] sm:text-[26px] font-bold tracking-tight leading-[1.15] text-foreground">
+                  {project.name}
+                </h1>
                 <StatusBadge status={project.status} />
               </div>
-              <div className="flex items-center gap-1.5 mt-1">
+              <p className="text-muted-foreground text-xs max-w-md leading-relaxed mt-2">
+                Strategic intelligence and synthesis for this workspace. Switch tabs to review transcripts
+                or your interview script.
+              </p>
+              <div className="flex items-center gap-1.5 mt-3">
                 <span className="material-symbols-outlined text-[14px] text-muted-foreground">groups</span>
                 <p className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">{project.interview_count}</span>
@@ -214,7 +220,7 @@ export function ProjectPageClient({
         </div>
 
         {/* Tab bar */}
-        <div className="flex items-center gap-2 border-b border-border">
+        <div className="flex items-center gap-2 border-b border-border/60">
           <div className="flex gap-0">
             {(["interviews", "script"] as Tab[]).map((tab) => {
               const labels: Record<Tab, string> = {
@@ -231,11 +237,11 @@ export function ProjectPageClient({
                   onClick={() => setActiveTab(tab)}
                   className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors border-b-2 -mb-px ${
                     activeTab === tab
-                      ? "border-[#FF6A4D] text-foreground"
+                      ? "border-interview-brand text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                   }`}
                 >
-                  <span className={`material-symbols-outlined text-[15px] leading-none ${activeTab === tab ? "text-[#FF6A4D]" : ""}`}>
+                  <span className={`material-symbols-outlined text-[15px] leading-none ${activeTab === tab ? "text-interview-brand" : ""}`}>
                     {icons[tab]}
                   </span>
                   {labels[tab]}
@@ -247,7 +253,7 @@ export function ProjectPageClient({
             {project.status === "ready" ? (
               <Link
                 href={`/interviews/${projectId}/decision`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#ff6a4d] to-[#ff874d] text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-interview-brand to-orange-400 text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
                 <span className="material-symbols-outlined text-[14px] leading-none">insights</span>
                 View Decision
@@ -255,7 +261,7 @@ export function ProjectPageClient({
             ) : (
               <button
                 disabled
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-medium text-muted-foreground bg-muted/40 cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 text-xs font-medium text-muted-foreground bg-muted/40 cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-[14px] leading-none opacity-50">lock</span>
                 View Decision
@@ -275,9 +281,11 @@ export function ProjectPageClient({
 
       {/* Interviews tab — constrained */}
       {activeTab === "interviews" && (
-        <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-14 mt-8 space-y-6">
+        <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-16 mt-10 space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold">Interviews</h2>
+            <h2 className="serif-text text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              Interviews
+            </h2>
             <div className="flex items-center gap-3">
               <RunAnalysisButton
                 projectId={projectId}
@@ -286,31 +294,31 @@ export function ProjectPageClient({
               />
               <Link
                 href={`/interviews/${projectId}/add`}
-                className="px-2.5 py-1 rounded-lg border border-border text-xs font-medium hover:bg-muted/50 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-border/80 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
               >
                 + Add Interview
               </Link>
             </div>
           </div>
 
-          <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between gap-5">
+          <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft flex flex-wrap items-center justify-between gap-5">
             <div className="flex flex-wrap items-center gap-6 md:gap-10">
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest">
                   Decision
                 </span>
-                <span className="text-base font-bold text-[#FF6A4D]">{decisionLabel}</span>
+                <span className="text-base font-bold text-interview-brand">{decisionLabel}</span>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest">
                   Confidence
                 </span>
                 <span className="text-base font-bold">{confidencePct}%</span>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest">
                   Verdict
                 </span>
                 <span className={`text-base font-bold ${verdictClassName}`}>{verdictLabel}</span>
@@ -331,7 +339,7 @@ export function ProjectPageClient({
                 </div>
               )}
               {interviews.length === 0 ? (
-                <div className="border border-border rounded-xl p-8 text-center text-muted-foreground bg-card">
+                <div className="border border-border/60 rounded-2xl p-8 text-center text-muted-foreground bg-card shadow-soft">
                   <p className="text-sm">No interviews yet. Add at least 3 to run analysis.</p>
                 </div>
               ) : (
@@ -348,7 +356,7 @@ export function ProjectPageClient({
                     <Link
                       key={interview.id}
                       href={`/interviews/${projectId}/${interview.id}`}
-                      className="block bg-card rounded-2xl p-6 shadow-sm border border-border/50 hover:shadow-md transition-all"
+                      className="block bg-card rounded-2xl p-6 border border-border/60 shadow-soft hover:shadow-card-hover transition-all"
                     >
                       <div className="flex justify-between items-start mb-6 gap-4">
                         <div className="flex space-x-4 min-w-0">
@@ -404,7 +412,7 @@ export function ProjectPageClient({
                             </span>
                             <ul className="space-y-2">
                               <li className="flex items-start text-xs text-foreground">
-                                <span className="text-[#FF6A4D] mr-2">•</span> {problemSnippet}
+                                <span className="text-interview-brand mr-2">•</span> {problemSnippet}
                               </li>
                             </ul>
                           </div>
@@ -425,14 +433,14 @@ export function ProjectPageClient({
             </div>
 
             <div className="md:col-span-3 space-y-5 self-start">
-              <div className="bg-[#11151C] text-white rounded-2xl p-5 shadow-xl">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-base font-bold">Live Insights</h2>
-                  <span className="flex h-2 w-2 rounded-full bg-[#FF6A4D] animate-pulse" />
+              <div className="rounded-2xl border border-white/10 bg-[#11151C] p-5 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="serif-text text-base font-bold text-white">Live Insights</h2>
+                  <span className="flex h-2 w-2 rounded-full bg-interview-brand animate-pulse" />
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
                       Problem Clusters
                     </span>
                     <div className="space-y-3">
@@ -444,17 +452,20 @@ export function ProjectPageClient({
                             <div key={cluster.id} className="flex items-center justify-between gap-3">
                               <div className="flex items-center min-w-0">
                                 <span
-                                  className={`w-5 text-[10px] font-bold ${active ? "text-[#FF6A4D]" : "text-gray-500"}`}
+                                  className={`w-5 text-[10px] font-bold ${active ? "text-interview-brand" : "text-zinc-500"}`}
                                 >
                                   {String(idx + 1).padStart(2, "0")}
                                 </span>
-                                <span className={`text-xs truncate ${active ? "text-gray-200" : "text-gray-400"}`} title={cluster.canonical_problem}>
+                                <span
+                                  className={`text-xs truncate ${active ? "text-zinc-200" : "text-zinc-400"}`}
+                                  title={cluster.canonical_problem}
+                                >
                                   {toLiveInsightsClusterTitle(cluster.canonical_problem)}
                                 </span>
                               </div>
-                              <div className="w-12 h-1 bg-gray-800 rounded-full overflow-hidden shrink-0">
+                              <div className="w-12 h-1 rounded-full overflow-hidden shrink-0 bg-zinc-800">
                                 <div
-                                  className={`${active ? "bg-[#FF6A4D]" : "bg-gray-400"} h-full`}
+                                  className={`${active ? "bg-interview-brand" : "bg-zinc-500"} h-full`}
                                   style={{ width: `${bar}%` }}
                                 />
                               </div>
@@ -462,13 +473,13 @@ export function ProjectPageClient({
                           );
                         })
                       ) : (
-                        <p className="text-xs text-gray-400">No clusters available yet.</p>
+                        <p className="text-xs text-zinc-400">No clusters available yet.</p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
                       Emerging Patterns
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -476,10 +487,10 @@ export function ProjectPageClient({
                         (pattern, idx) => (
                           <span
                             key={`${pattern}-${idx}`}
-                            className={`text-[10px] px-2 py-1 rounded border ${
+                            className={`text-[10px] px-2 py-1 rounded-md border ${
                               idx === 0
-                                ? "bg-[#FF6A4D]/20 border-[#FF6A4D]/30 text-[#FF6A4D]"
-                                : "bg-white/5 border-white/10 text-gray-300"
+                                ? "border-interview-brand/35 bg-interview-brand/20 text-interview-brand"
+                                : "border-white/10 bg-white/5 text-zinc-300"
                             }`}
                           >
                             {pattern}
@@ -487,38 +498,40 @@ export function ProjectPageClient({
                         )
                       )}
                       {rankedClusters.length === 0 && (
-                        <span className="text-[10px] text-gray-400">No patterns yet</span>
+                        <span className="text-[10px] text-zinc-400">No patterns yet</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-white/5 rounded-xl p-3.5 border border-white/10">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
                     <div className="flex justify-between items-end mb-2">
-                      <span className="text-[10px] uppercase font-bold text-gray-500">Confidence</span>
-                      <span className="text-xl font-bold text-[#FF6A4D]">{confidencePct}%</span>
+                      <span className="text-[11px] uppercase font-bold tracking-wide text-zinc-500">
+                        Confidence
+                      </span>
+                      <span className="text-xl font-bold text-interview-brand">{confidencePct}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-gray-800 rounded-full">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
                       <div
-                        className="h-full bg-gradient-to-r from-orange-400 to-[#FF6A4D] rounded-full"
+                        className="h-full rounded-full bg-gradient-to-r from-orange-400 to-interview-brand"
                         style={{ width: `${Math.min(100, Math.max(0, confidencePct))}%` }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-500 tracking-widest block mb-4">
+                    <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-widest block mb-4">
                       Suggested Features
                     </span>
                     <ul className="space-y-3">
                       {suggestedFeatures.length > 0 ? (
                         suggestedFeatures.map((feature, idx) => (
-                          <li key={`${feature.name}-${idx}`} className="text-xs text-gray-400 flex items-start">
-                            <span className="mr-2 text-[#FF6A4D]">•</span>
+                          <li key={`${feature.name}-${idx}`} className="flex items-start text-xs text-zinc-400">
+                            <span className="mr-2 text-interview-brand">•</span>
                             {feature.name}
                           </li>
                         ))
                       ) : (
-                        <li className="text-xs text-gray-400">No suggested features yet.</li>
+                        <li className="text-xs text-zinc-400">No suggested features yet.</li>
                       )}
                     </ul>
                   </div>
