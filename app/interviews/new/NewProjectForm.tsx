@@ -90,7 +90,7 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
           )}
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           )}
 
           <button
