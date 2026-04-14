@@ -296,7 +296,6 @@ export function ProjectPageClient({
                 projectId={projectId}
                 interviewCount={project.interview_count}
                 projectStatus={project.status}
-                onboardingCompletedAt={project.onboarding_completed_at}
               />
               <Link
                 href={`/interviews/${projectId}/add`}

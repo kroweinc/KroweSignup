@@ -390,25 +390,28 @@ export async function deriveOnboardingCompletion(
     return { completed: false, onboardingMode: null };
   }
 
-  const [sessionRes, answersRes] = await Promise.all([
-    supabase
-      .from("signup_sessions")
-      .select("status")
-      .eq("id", sessionId)
-      .maybeSingle(),
-    supabase
-      .from("signup_answers")
-      .select("step_key, final_source")
-      .eq("session_id", sessionId)
-      .in("step_key", URL_ONBOARDING_STEP_KEYS),
-  ]);
+  const answersRes = await supabase
+    .from("signup_answers")
+    .select("step_key, final_source, final_answer")
+    .eq("session_id", sessionId)
+    .in("step_key", URL_ONBOARDING_STEP_KEYS);
 
-  const isCompletedSession = sessionRes.data?.status === "completed";
-  if (!isCompletedSession) {
+  if (answersRes.error) {
     return { completed: false, onboardingMode: null };
   }
 
   const answerRows = answersRes.data ?? [];
+  const answerByKey = new Map(
+    answerRows.map((row) => [row.step_key, (row.final_answer ?? "").trim()])
+  );
+  const hasAllRequiredAnswers = URL_ONBOARDING_STEP_KEYS.every((key) => {
+    const value = answerByKey.get(key);
+    return Boolean(value && value.length > 0);
+  });
+  if (!hasAllRequiredAnswers) {
+    return { completed: false, onboardingMode: null };
+  }
+
   const hasWebscraperSource = answerRows.some((row) => {
     const source = typeof row.final_source === "string" ? row.final_source : "";
     return source === "ai_suggested" || source === "user_edited";

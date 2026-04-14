@@ -52,6 +52,18 @@ export async function GET(
   }
 
   const sessionId = projectRes.data.session_id as string | null;
+  const sessionRes = sessionId
+    ? await supabase
+        .from("signup_sessions")
+        .select("onboarding_source_url, onboarding_source_updated_at")
+        .eq("id", sessionId)
+        .maybeSingle()
+    : { data: null, error: null };
+
+  if (sessionRes.error) {
+    return NextResponse.json({ error: sessionRes.error.message }, { status: 500 });
+  }
+
   const signupRowsRes = sessionId
     ? await supabase
         .from("signup_answers")
@@ -112,6 +124,8 @@ export async function GET(
     onboarding: {
       mode: onboardingMode,
       completedAt: onboardingCompletedAt,
+      sourceUrl: sessionRes.data?.onboarding_source_url ?? null,
+      sourceUpdatedAt: sessionRes.data?.onboarding_source_updated_at ?? null,
     },
     answers,
   });

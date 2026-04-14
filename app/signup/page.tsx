@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import Link from 'next/link'
 import { SignupFormProvider } from './SignupFormContext'
 import {
   IdeaStep,
@@ -45,7 +44,6 @@ export default function SignupPage() {
   const [finishing, setFinishing] = useState(false)
 
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
-  const urlFastTrackEnabled = process.env.NEXT_PUBLIC_ENABLE_URL_ONBOARDING_SCRAPE === "true";
 
   if (loading) return <SpiralPreloader className="animate-fade-in" />;
   if (error) return <div className='p-6 text-danger'>{error}</div>
@@ -149,25 +147,13 @@ export default function SignupPage() {
   if (stepKey === 'idea') {
     const ideaValue = raw || ''
     return wrap(
-      <div>
-        {urlFastTrackEnabled && (
-          <div className="px-4 md:px-8 pt-4">
-            <Link
-              href="/signup/url"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground underline underline-offset-4"
-            >
-              Have a website? Skip the form -&gt;
-            </Link>
-          </div>
-        )}
-        <IdeaStep
-          value={ideaValue}
-          onChange={(v: string) => setLocal('idea', v)}
-          onBack={goBack}
-          onContinue={() => saveAndNext('idea', ideaValue)}
-          progressPercent={progressPercent}
-        />
-      </div>
+      <IdeaStep
+        value={ideaValue}
+        onChange={(v: string) => setLocal('idea', v)}
+        onBack={goBack}
+        onContinue={() => saveAndNext('idea', ideaValue)}
+        progressPercent={progressPercent}
+      />
     )
   }
 
