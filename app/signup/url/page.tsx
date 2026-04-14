@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
+import UrlOnboardingStartClient from "./UrlOnboardingStartClient";
 
 export default function UrlOnboardingPage() {
-  notFound();
+  return <UrlOnboardingStartClient />;
 }

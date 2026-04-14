@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { SignupFormProvider } from './SignupFormContext'
 import {
   IdeaStep,
@@ -40,6 +40,10 @@ export default function SignupPage() {
   const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [urlPromptDismissed, setUrlPromptDismissed] = useState(false);
+  const [urlValue, setUrlValue] = useState("");
+  const [urlSubmitting, setUrlSubmitting] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const router = useRouter();
   const [finishing, setFinishing] = useState(false)
 
@@ -50,8 +54,90 @@ export default function SignupPage() {
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
   const progressPercent = getProgressPercent(stepKey);
   const raw = answersByStepKey[stepKey] ?? "";
+  const hasSavedAnswers = Object.values(answersByStepKey).some((value) => String(value ?? "").trim().length > 0);
+  const shouldShowUrlPrompt =
+    !urlPromptDismissed &&
+    stepKey === "idea" &&
+    !hasSavedAnswers &&
+    !overrideStepKey;
 
   if (saving || finishing) return <SpiralPreloader className="animate-fade-in" />;
+
+  async function startFromWebsiteUrl(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (urlSubmitting || !sessionId) return;
+
+    const normalizedUrl = urlValue.trim();
+    if (!normalizedUrl) {
+      setUrlError("Enter a website URL first.");
+      return;
+    }
+
+    setUrlSubmitting(true);
+    setUrlError(null);
+    try {
+      const res = await fetch("/api/signup/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, url: normalizedUrl }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || "Failed to analyze this URL.");
+      }
+      router.push(`/signup/url/review?sessionId=${encodeURIComponent(sessionId)}`);
+    } catch (err) {
+      setUrlError(err instanceof Error ? err.message : "Failed to analyze this URL.");
+    } finally {
+      setUrlSubmitting(false);
+    }
+  }
+
+  if (shouldShowUrlPrompt) {
+    return (
+      <div className="min-h-screen bg-background p-6 md:p-10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
+          <h1 className="text-2xl md:text-3xl font-semibold text-foreground">What is your business website?</h1>
+          <p className="mt-3 text-sm md:text-base text-muted-foreground">
+            Add your URL and we will prefill onboarding so you can skip the manual questionnaire.
+          </p>
+          <form className="mt-6 space-y-4" onSubmit={startFromWebsiteUrl}>
+            <label className="block">
+              <span className="text-sm font-medium text-foreground">Website URL</span>
+              <input
+                type="url"
+                value={urlValue}
+                onChange={(e) => setUrlValue(e.target.value)}
+                placeholder="https://yourcompany.com"
+                className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                required
+              />
+            </label>
+            {urlError ? <p className="text-sm text-danger">{urlError}</p> : null}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={urlSubmitting || !sessionId}
+                className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {urlSubmitting ? "Analyzing..." : "Analyze My Business"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUrlPromptDismissed(true);
+                  setUrlError(null);
+                }}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Fill in manually instead
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   function setLocal(step: StepKey, v: unknown) {
     const serialized = typeof v === 'string' ? v : JSON.stringify(v)
