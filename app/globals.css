@@ -3,7 +3,7 @@
 :root {
   --font-project-serif: ui-serif, Georgia, "Times New Roman", serif;
   --background: #ffffff;
-  --foreground: var(--foreground);
+  --foreground: #171717;
   --primary: #f97316;
   --primary-hover: color-mix(in srgb, var(--primary) 86%, #000000);
   --primary-foreground: #ffffff;

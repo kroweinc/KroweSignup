@@ -71,6 +71,23 @@ MONGODB_VECTOR_INDEX_NAME=problems_embedding_idx
 - Add `projectId` as a filter field in the index definition.
 7. Restart the app and run interview processing; the backend will use Mongo dedup when configured, and fall back safely when not configured.
 
+### Temporary Live Mongo Health Check
+
+Use this only during rollout/testing to verify the deployed app can reach MongoDB.
+
+- Endpoint: `GET /api/health/mongo`
+- In production, it is disabled by default and returns `404`.
+- To temporarily enable it in production, set:
+
+```bash
+ENABLE_TEMP_MONGO_HEALTHCHECK=true
+```
+
+Response behavior:
+
+- `200` with `{ ok: true }` when Mongo ping succeeds
+- `503` when Mongo is not configured or unreachable
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
