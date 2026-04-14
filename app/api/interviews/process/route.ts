@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { runDecisionPipeline } from "@/lib/interviews/pipeline";
+import { deriveOnboardingCompletion } from "@/lib/interviews/businessProfile";
 
 export const maxDuration = 300;
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
 
   const { data: project, error: projErr } = await supabase
     .from("interview_projects")
-    .select("id, status, interview_count, updated_at")
+    .select("id, status, interview_count, updated_at, session_id, onboarding_mode, onboarding_completed_at")
     .eq("id", projectId)
     .single();
 
@@ -39,6 +40,30 @@ export async function POST(req: Request) {
   if (project.interview_count < 3) {
     return NextResponse.json(
       { error: "At least 3 interviews are required before running analysis" },
+      { status: 422 }
+    );
+  }
+
+  let onboardingCompletedAt = project.onboarding_completed_at as string | null;
+  if (!onboardingCompletedAt) {
+    const onboarding = await deriveOnboardingCompletion(supabase, project.session_id);
+    if (onboarding.completed) {
+      onboardingCompletedAt = new Date().toISOString();
+      await supabase
+        .from("interview_projects")
+        .update({
+          onboarding_mode: onboarding.onboardingMode,
+          onboarding_completed_at: onboardingCompletedAt,
+          updated_at: onboardingCompletedAt,
+        })
+        .eq("id", projectId)
+        .eq("user_id", user.id);
+    }
+  }
+
+  if (!onboardingCompletedAt) {
+    return NextResponse.json(
+      { error: "Complete onboarding (webscraper or manual) before running analysis." },
       { status: 422 }
     );
   }
