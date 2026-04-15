@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import Image from "next/image";
 
 type ActivityLog = {
   id: string;
@@ -42,6 +43,12 @@ export default async function LogsPage() {
       <div className="mx-auto max-w-[1040px] space-y-5">
         <div className="flex items-center justify-between gap-4">
           <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Krowe platform
+              </span>
+            </div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Dashboard
             </p>

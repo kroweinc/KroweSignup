@@ -167,7 +167,7 @@ export default async function InterviewsPage() {
       <main className="w-full p-0">
         <div className="overflow-hidden border border-border/60 bg-card shadow-soft">
           <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-            <aside className="border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
+            <aside className="flex h-full flex-col border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
               <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
                 <Image
                   src="/KroweIcon.png"
@@ -178,7 +178,6 @@ export default async function InterviewsPage() {
                 />
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-foreground">Krowe</p>
-                  <p className="truncate text-[10px] text-muted-foreground">Insight OS</p>
                 </div>
               </div>
 
@@ -257,6 +256,41 @@ export default async function InterviewsPage() {
                   New project
                 </Link>
               </div>
+
+              <div className="mt-auto pt-4">
+                <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Account
+                </p>
+                <div className="space-y-1 rounded-xl border border-border/60 bg-background p-2">
+                  <Link
+                    href="/interviews/account?tab=profile"
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  >
+                    <span className="material-symbols-outlined text-base" aria-hidden>
+                      person
+                    </span>
+                    Edit profile
+                  </Link>
+                  <Link
+                    href="/interviews/account?tab=security"
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  >
+                    <span className="material-symbols-outlined text-base" aria-hidden>
+                      lock
+                    </span>
+                    Security
+                  </Link>
+                  <Link
+                    href="/interviews/account?tab=billing"
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  >
+                    <span className="material-symbols-outlined text-base" aria-hidden>
+                      credit_card
+                    </span>
+                    Billing
+                  </Link>
+                </div>
+              </div>
             </aside>
 
             <section className="p-3 sm:p-4">
@@ -272,14 +306,6 @@ export default async function InterviewsPage() {
                   <h1 className="text-sm font-medium text-foreground">Krowe Dashboard</h1>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link
-                    href="https://docs.krowe.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-md border border-border/70 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                  >
-                    API Docs
-                  </Link>
                   <LogoutButton />
                 </div>
               </header>

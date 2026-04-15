@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { summaryToBullets } from "@/lib/interviews/formatSummary";
 
 interface TopQuote {
@@ -251,12 +252,21 @@ export default function InterviewDetailClient({
             <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card">
               <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
-                  <Link
-                    href={`/interviews/${projectId}`}
-                    className="inline-block text-sm text-muted-foreground hover:underline mb-5"
-                  >
-                    ← Back to project
-                  </Link>
+                  <div className="mb-5 flex flex-wrap items-center gap-3">
+                    <Link
+                      href={`/interviews/${projectId}`}
+                      className="inline-block text-sm text-muted-foreground hover:underline"
+                    >
+                      ← Back to project
+                    </Link>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+                      <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Krowe analysis
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between mb-5">
                     <h1 className="text-3xl lg:text-4xl font-bold text-on-surface tracking-tight leading-[1.1]">
                       Transcription &amp; Raw Logs

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
@@ -43,6 +44,12 @@ export default function NewProjectForm({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-10">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+          <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Krowe platform
+          </span>
+        </div>
         <div className="mb-6">
           <Link href="/interviews" className="text-sm text-muted-foreground hover:underline">
             ← Back to projects

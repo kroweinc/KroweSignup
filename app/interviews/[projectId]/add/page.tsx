@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const MIN_TRANSCRIPT_CHARS = 100;
 
@@ -49,6 +50,10 @@ export default function AddInterviewPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[520px] mx-auto px-4 sm:px-5 pt-4">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-1.5">
+          <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
+          <span className="text-[11px] font-semibold text-foreground">Krowe ingestion</span>
+        </div>
         <div className="mb-3">
           <Link
             href={`/interviews/${projectId}`}

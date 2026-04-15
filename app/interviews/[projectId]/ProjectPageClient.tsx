@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { InterviewScriptTab } from "./InterviewScriptTab";
 import { BusinessProfileTab } from "./BusinessProfileTab";
@@ -184,10 +185,17 @@ export function ProjectPageClient({
       <div className="max-w-[1240px] mx-auto w-full px-4 md:px-5 pt-10 md:pt-12 pb-0">
         <div className="max-w-3xl">
           {/* Back link */}
-          <div className="mb-5">
+          <div className="mb-5 flex flex-wrap items-center gap-3">
             <Link href="/interviews" className="text-xs text-muted-foreground hover:underline">
               ← All projects
             </Link>
+            <span className="text-xs text-muted-foreground">·</span>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Krowe workspace
+              </span>
+            </div>
           </div>
 
           {/* Project header — serif/sans pairing like upload flow */}
