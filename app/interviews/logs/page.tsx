@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import Image from "next/image";
+import LogoutButton from "../LogoutButton";
+import InterviewsShell from "../_components/InterviewsShell";
+import DashboardPageHeader from "../_components/DashboardPageHeader";
 
 type ActivityLog = {
   id: string;
@@ -39,28 +41,20 @@ export default async function LogsPage() {
   const logs = (data ?? []) as ActivityLog[];
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8">
-      <div className="mx-auto max-w-[1040px] space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
-              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Krowe platform
-              </span>
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Dashboard
-            </p>
-            <h1 className="serif-text mt-1 text-3xl font-semibold text-foreground">Activity Logs</h1>
-          </div>
-          <Link
-            href="/interviews"
-            className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
-          >
-            Back to Home
-          </Link>
-        </div>
+    <InterviewsShell activeNav="logs" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+      <div className="space-y-5">
+        <DashboardPageHeader
+          title="Activity Logs"
+          description="Audit project-level actions and system events from your interview workspace."
+          actions={
+            <Link
+              href="/interviews"
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
+            >
+              Back to Home
+            </Link>
+          }
+        />
 
         {error ? (
           <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
@@ -103,6 +97,6 @@ export default async function LogsPage() {
           </section>
         )}
       </div>
-    </main>
+    </InterviewsShell>
   );
 }

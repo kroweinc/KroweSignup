@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import DashboardPageHeader from "../_components/DashboardPageHeader";
 
 type Project = {
   id: string;
@@ -164,176 +165,227 @@ export function ImportsClient({ initialItems, projects, initialConnection }: Pro
   }
 
   return (
-    <div className="min-h-dvh bg-zinc-50">
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-zinc-900">Granola Imports</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Review synced transcripts and assign each one to a Krowe project.
-            </p>
-          </div>
-          <div className="flex gap-2">
+    <div className="space-y-4">
+      <DashboardPageHeader
+        title="Granola Imports"
+        description="Review synced transcripts and assign each one to a Krowe project."
+        actions={
+          <>
             <Link
               href="/interviews"
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
             >
-              Back to projects
+              Back to Home
             </Link>
             {connection?.status === "active" && (
               <button
                 onClick={syncNow}
                 disabled={busy === "sync"}
-                className="rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                className="rounded-full bg-gradient-to-br from-interview-brand to-interview-brand-end px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:opacity-50"
               >
                 {busy === "sync" ? "Syncing..." : "Full resync"}
               </button>
             )}
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        {!connection || connection.status !== "active" ? (
-          <section className="mb-8 rounded-xl border border-zinc-200 bg-white p-5">
-            <h2 className="text-base font-semibold text-zinc-900">Connect Granola</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
+          <p className="text-xs text-muted-foreground">Connection status</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">
+            {connection?.status === "active" ? "Connected" : "Disconnected"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {connection?.key_hint ? `Key ${connection.key_hint}` : "No API key linked"}
+          </p>
+        </article>
+        <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
+          <p className="text-xs text-muted-foreground">Pending imports</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{items.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Unassigned transcript notes</p>
+        </article>
+        <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
+          <p className="text-xs text-muted-foreground">Project targets</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{projects.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {projects.length > 0 ? "Available assignment destinations" : "Create a project to assign"}
+          </p>
+        </article>
+        <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
+          <p className="text-xs text-muted-foreground">Last sync</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {connection?.last_sync_completed_at
+              ? new Date(connection.last_sync_completed_at).toLocaleString()
+              : "Not synced yet"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Run full resync to refresh all notes</p>
+        </article>
+      </section>
+
+      {!connection || connection.status !== "active" ? (
+        <section className="rounded-xl border border-border/60 bg-card p-5">
+          <div className="mb-4 border-b border-border/60 pb-3">
+            <h2 className="text-base font-semibold text-foreground">Connect Granola</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               Add your Granola API key to sync transcript notes into this inbox.
             </p>
-            <form onSubmit={connectGranola} className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="grn_..."
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900"
-              />
-              <button
-                type="submit"
-                disabled={busy === "connect"}
-                className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
-              >
-                {busy === "connect" ? "Connecting..." : "Connect"}
-              </button>
-            </form>
-          </section>
-        ) : (
-          <section className="mb-6 rounded-xl border border-zinc-200 bg-white p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-zinc-800">
-                  Connected key: {connection.key_hint ?? "saved"}
+          </div>
+          <form onSubmit={connectGranola} className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="grn_..."
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35"
+            />
+            <button
+              type="submit"
+              disabled={busy === "connect"}
+              className="rounded-lg bg-gradient-to-br from-interview-brand to-interview-brand-end px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:opacity-50"
+            >
+              {busy === "connect" ? "Connecting..." : "Connect"}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <section className="rounded-xl border border-border/60 bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Connected key: {connection.key_hint ?? "saved"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Last sync:{" "}
+                {connection.last_sync_completed_at
+                  ? new Date(connection.last_sync_completed_at).toLocaleString()
+                  : "Not yet synced"}
+              </p>
+              {connection.last_error && (
+                <p className="mt-2 rounded-md border border-danger/40 bg-danger-soft px-2 py-1 text-xs text-danger">
+                  Last error: {connection.last_error}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Last sync:{" "}
-                  {connection.last_sync_completed_at
-                    ? new Date(connection.last_sync_completed_at).toLocaleString()
-                    : "Not yet synced"}
-                </p>
-                {connection.last_error && (
-                  <p className="mt-2 text-xs text-red-600">Last error: {connection.last_error}</p>
-                )}
-              </div>
-              <button
-                onClick={disconnect}
-                disabled={busy === "disconnect"}
-                className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
-              >
-                Disconnect
-              </button>
+              )}
             </div>
-          </section>
-        )}
+            <button
+              onClick={disconnect}
+              disabled={busy === "disconnect"}
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+            >
+              Disconnect
+            </button>
+          </div>
+        </section>
+      )}
 
-        <div className="mb-4">
+      <section className="rounded-xl border border-border/60 bg-card p-4">
+        <div className="mb-3 border-b border-border/60 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">Import queue</p>
+            <span className="rounded-full border border-border bg-muted/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {filteredItems.length} visible / {items.length} total
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Search transcripts then assign each interview note to a project.</p>
+        </div>
+        <div>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search title, summary, or transcript preview"
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35"
           />
         </div>
+      </section>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-        {syncResult && (
-          <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
-            {syncResult.fullResync ? "Full resync complete" : "Sync complete"}: scanned{" "}
-            {syncResult.scanned}, imported {syncResult.upserted}, skipped {syncResult.skipped}.
-            {syncResult.scanned === 0 && (
-              <p className="mt-1 text-xs text-zinc-500">
-                Granola returned no API-eligible notes for this key. Granola only returns notes that
-                have generated summaries/transcripts and are visible to the API key owner.
+      {error && (
+        <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
+      )}
+      {syncResult && (
+        <div className="rounded-xl border border-border/60 bg-card px-4 py-3 text-sm text-foreground">
+          {syncResult.fullResync ? "Full resync complete" : "Sync complete"}: scanned {syncResult.scanned},
+          imported {syncResult.upserted}, skipped {syncResult.skipped}.
+          {syncResult.scanned === 0 && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Granola returned no API-eligible notes for this key. Granola only returns notes that have
+              generated summaries/transcripts and are visible to the API key owner.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {filteredItems.length === 0 && (
+          <div className="rounded-xl border border-border/60 bg-card p-5 text-sm text-muted-foreground">
+            <p>No unassigned transcripts found.</p>
+            {projects.length === 0 && (
+              <p className="mt-1">
+                Create a project in{" "}
+                <Link href="/interviews/projects" className="font-semibold text-foreground hover:underline">
+                  Projects
+                </Link>{" "}
+                so imported notes can be assigned.
               </p>
             )}
           </div>
         )}
 
-        <div className="space-y-4">
-          {filteredItems.length === 0 && (
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 text-sm text-zinc-500">
-              No unassigned transcripts found.
-            </div>
-          )}
-
-          {filteredItems.map((item) => (
-            <article key={item.id} className="rounded-xl border border-zinc-200 bg-white p-5">
-              <div className="flex flex-col justify-between gap-3 sm:flex-row">
-                <div className="min-w-0">
-                  <h3 className="truncate text-base font-semibold text-zinc-900">
-                    {item.title || "Untitled interview"}
-                  </h3>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    Updated {new Date(item.granola_updated_at).toLocaleString()} by{" "}
-                    {item.owner_name || item.owner_email || "Unknown owner"}
-                  </p>
-                </div>
-                <div className="w-full sm:w-64">
-                  <select
-                    defaultValue=""
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (!value) return;
-                      void assign(item.id, value);
-                      e.currentTarget.value = "";
-                    }}
-                    disabled={busy === item.id || projects.length === 0}
-                  >
-                    <option value="">
-                      {projects.length > 0 ? "Assign to project..." : "Create project first"}
-                    </option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        {filteredItems.map((item) => (
+          <article key={item.id} className="rounded-xl border border-border/60 bg-card p-5">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row">
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold text-foreground">
+                  {item.title || "Untitled interview"}
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Updated {new Date(item.granola_updated_at).toLocaleString()} by{" "}
+                  {item.owner_name || item.owner_email || "Unknown owner"}
+                </p>
               </div>
+              <div className="w-full sm:w-64">
+                <select
+                  defaultValue=""
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value) return;
+                    void assign(item.id, value);
+                    e.currentTarget.value = "";
+                  }}
+                  disabled={busy === item.id || projects.length === 0}
+                >
+                  <option value="">
+                    {projects.length > 0 ? "Assign to project..." : "Create project first"}
+                  </option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              <p className="mt-3 text-sm text-zinc-700">{item.transcript_preview}</p>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-sm font-medium text-zinc-600">
-                  View transcript and details
-                </summary>
-                <div className="mt-2 space-y-2 rounded-lg bg-zinc-50 p-3">
-                  {item.summary_text && (
-                    <p className="text-sm text-zinc-700">
-                      <span className="font-medium">Summary:</span> {item.summary_text}
-                    </p>
-                  )}
-                  <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-xs text-zinc-700">
-                    {item.normalized_text}
-                  </pre>
-                </div>
-              </details>
-            </article>
-          ))}
-        </div>
-      </main>
+            <p className="mt-3 text-sm text-foreground/90">{item.transcript_preview}</p>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                View transcript and details
+              </summary>
+              <div className="mt-2 space-y-2 rounded-lg border border-border/60 bg-muted/25 p-3">
+                {item.summary_text && (
+                  <p className="text-sm text-foreground/90">
+                    <span className="font-medium">Summary:</span> {item.summary_text}
+                  </p>
+                )}
+                <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-xs text-foreground/90">
+                  {item.normalized_text}
+                </pre>
+              </div>
+            </details>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

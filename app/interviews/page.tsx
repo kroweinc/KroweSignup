@@ -3,7 +3,7 @@ import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import Link from "next/link";
 import Image from "next/image";
 import LogoutButton from "./LogoutButton";
-import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import InterviewsShell from "./_components/InterviewsShell";
 
 export const dynamic = "force-dynamic";
 
@@ -164,165 +164,8 @@ export default async function InterviewsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="w-full p-0">
-        <div className="overflow-hidden border border-border/60 bg-card shadow-soft">
-          <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-            <aside className="flex h-full flex-col border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
-              <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
-                <Image
-                  src="/KroweIcon.png"
-                  alt="Krowe icon"
-                  width={22}
-                  height={22}
-                  className="h-[22px] w-[22px] rounded-sm"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-foreground">Krowe</p>
-                </div>
-              </div>
-
-              <nav aria-label="Primary" className="space-y-3">
-                <div>
-                  <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Workspace
-                  </p>
-                  <div className="space-y-1">
-                    <Link
-                      href="/interviews"
-                      className="flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand"
-                    >
-                      <span className="material-symbols-outlined text-base" aria-hidden>
-                        home
-                      </span>
-                      Home
-                    </Link>
-                    <Link
-                      href="/interviews/new"
-                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35"
-                    >
-                      <span className="material-symbols-outlined text-base" aria-hidden>
-                        add_circle
-                      </span>
-                      Create
-                    </Link>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Manage
-                  </p>
-                  <div className="space-y-1">
-                    {FEATURE_FLAGS.granolaImports && (
-                      <Link
-                        href="/interviews/imports"
-                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                      >
-                        <span className="material-symbols-outlined text-base" aria-hidden>
-                          import_contacts
-                        </span>
-                        Granola imports
-                      </Link>
-                    )}
-                    <Link
-                      href="/interviews/projects"
-                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                    >
-                      <span className="material-symbols-outlined text-base" aria-hidden>
-                        folder_open
-                      </span>
-                      Projects
-                    </Link>
-                    <Link
-                      href="/interviews/usage?range=24h"
-                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                    >
-                      <span className="material-symbols-outlined text-base" aria-hidden>
-                        insights
-                      </span>
-                      Usage
-                    </Link>
-                    <Link
-                      href="/interviews/logs"
-                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                    >
-                      <span className="material-symbols-outlined text-base" aria-hidden>
-                        inventory_2
-                      </span>
-                      Logs
-                    </Link>
-                  </div>
-                </div>
-              </nav>
-
-              <div className="mt-4 rounded-xl border border-border/60 bg-background p-3">
-                <p className="text-xs font-semibold text-foreground">Run your next insight cycle</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Start a new interview project and benchmark product signals.
-                </p>
-                <Link
-                  href="/interviews/new"
-                  className="mt-3 inline-flex w-full items-center justify-center rounded-md bg-gradient-to-br from-interview-brand to-interview-brand-end px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-95"
-                >
-                  New project
-                </Link>
-              </div>
-
-              <div className="mt-auto pt-4">
-                <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Account
-                </p>
-                <div className="space-y-1 rounded-xl border border-border/60 bg-background p-2">
-                  <Link
-                    href="/interviews/account?tab=profile"
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                  >
-                    <span className="material-symbols-outlined text-base" aria-hidden>
-                      person
-                    </span>
-                    Edit profile
-                  </Link>
-                  <Link
-                    href="/interviews/account?tab=security"
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                  >
-                    <span className="material-symbols-outlined text-base" aria-hidden>
-                      lock
-                    </span>
-                    Security
-                  </Link>
-                  <Link
-                    href="/interviews/account?tab=billing"
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                  >
-                    <span className="material-symbols-outlined text-base" aria-hidden>
-                      credit_card
-                    </span>
-                    Billing
-                  </Link>
-                </div>
-              </div>
-            </aside>
-
-            <section className="p-3 sm:p-4">
-              <header className="mb-3 flex items-center justify-between border-b border-border/60 pb-3">
-                <div className="flex items-center gap-2">
-                  <Image
-                    src="/KroweIcon.png"
-                    alt="Krowe"
-                    width={18}
-                    height={18}
-                    className="h-[18px] w-[18px] rounded-sm"
-                  />
-                  <h1 className="text-sm font-medium text-foreground">Krowe Dashboard</h1>
-                </div>
-                <div className="flex items-center gap-2">
-                  <LogoutButton />
-                </div>
-              </header>
-
-              <article className="mb-3 overflow-hidden rounded-xl border border-border/60 bg-[radial-gradient(circle_at_90%_20%,color-mix(in_srgb,var(--interview-brand)_25%,white)_0%,transparent_38%),linear-gradient(180deg,color-mix(in_srgb,var(--interview-brand-tint)_42%,white),white)] p-4">
+    <InterviewsShell activeNav="home" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+      <article className="mb-3 overflow-hidden rounded-xl border border-border/60 bg-[radial-gradient(circle_at_90%_20%,color-mix(in_srgb,var(--interview-brand)_25%,white)_0%,transparent_38%),linear-gradient(180deg,color-mix(in_srgb,var(--interview-brand-tint)_42%,white),white)] p-4">
                 <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground">
                   <Image
                     src="/KroweIcon.png"
@@ -357,7 +200,7 @@ export default async function InterviewsPage() {
                 </div>
               </article>
 
-              <section className="overflow-hidden rounded-xl border border-border/60 bg-card">
+      <section className="overflow-hidden rounded-xl border border-border/60 bg-card">
                 <div className="flex items-center justify-between border-b border-border/60 px-3 py-2.5">
                   <h3 className="text-sm font-medium text-foreground">Home</h3>
                   <div className="flex items-center gap-1.5">
@@ -405,9 +248,9 @@ export default async function InterviewsPage() {
                     Decision readiness: {readyProjects}/{projects.length} projects in ready state.
                   </p>
                 </div>
-              </section>
+      </section>
 
-              <section className="mt-4">
+      <section className="mt-4">
                 <h3 className="mb-2 text-sm font-medium text-foreground">Project queue</h3>
                 <div className="overflow-hidden rounded-xl border border-border/60">
                   <div className="hidden grid-cols-[1.6fr_0.7fr_0.7fr_0.7fr_0.8fr] gap-2 border-b border-border/60 bg-muted/35 px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground md:grid">
@@ -463,11 +306,7 @@ export default async function InterviewsPage() {
                     })}
                   </div>
                 </div>
-              </section>
-            </section>
-          </div>
-        </div>
-      </main>
-    </div>
+      </section>
+    </InterviewsShell>
   );
 }

@@ -22,7 +22,7 @@ export default function AppHeader({ backHref, backLabel }: AppHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Link href="/interviews">
@@ -30,10 +30,10 @@ export default function AppHeader({ backHref, backLabel }: AppHeaderProps) {
           </Link>
           {backHref && (
             <>
-              <span className="text-zinc-300">/</span>
+              <span className="text-muted-foreground/60">/</span>
               <Link
                 href={backHref}
-                className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {backLabel ?? "Back"}
               </Link>
@@ -42,7 +42,7 @@ export default function AppHeader({ backHref, backLabel }: AppHeaderProps) {
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Log out
         </button>

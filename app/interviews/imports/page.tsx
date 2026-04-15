@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import LogoutButton from "../LogoutButton";
+import InterviewsShell from "../_components/InterviewsShell";
 import { ImportsClient } from "./ImportsClient";
 
 export const dynamic = "force-dynamic";
@@ -67,10 +69,12 @@ export default async function InterviewImportsPage() {
   ]);
 
   return (
-    <ImportsClient
-      initialItems={(items ?? []) as InboxItem[]}
-      projects={(projects ?? []) as Project[]}
-      initialConnection={(connection ?? null) as Connection | null}
-    />
+    <InterviewsShell activeNav="imports" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+      <ImportsClient
+        initialItems={(items ?? []) as InboxItem[]}
+        projects={(projects ?? []) as Project[]}
+        initialConnection={(connection ?? null) as Connection | null}
+      />
+    </InterviewsShell>
   );
 }
