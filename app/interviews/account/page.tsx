@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import Image from "next/image";
 
 type AccountPageProps = {
   searchParams: Promise<{
@@ -29,9 +30,15 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto w-full max-w-4xl p-4 sm:p-6">
+      <main className="mx-auto w-full max-w-5xl p-4 sm:p-6">
         <header className="mb-4 flex items-center justify-between">
           <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1">
+              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Krowe platform
+              </span>
+            </div>
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Account</p>
             <h1 className="mt-1 text-xl font-semibold">Manage your workspace profile</h1>
           </div>

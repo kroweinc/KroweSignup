@@ -245,10 +245,33 @@ export default function InterviewDetailClient({
   });
 
   return (
-    <div className="bg-surface text-on-surface">
-      <div className="flex min-h-screen flex-col">
-        <main className="flex-1 flex flex-col min-h-[calc(100vh-5rem)]">
-          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+    <div className="min-h-screen bg-background text-on-surface">
+      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
+        <aside className="border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-background px-2.5 py-2">
+            <Image src="/KroweIcon.png" alt="Krowe" width={20} height={20} className="rounded-sm" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Krowe</p>
+              <p className="text-[10px] text-muted-foreground">Interview analysis</p>
+            </div>
+          </div>
+          <nav className="space-y-1.5">
+            <Link href="/interviews" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base">home</span>
+              Home
+            </Link>
+            <Link href={`/interviews/${projectId}`} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+              <span className="material-symbols-outlined text-base">workspaces</span>
+              Workspace
+            </Link>
+            <div className="flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand">
+              <span className="material-symbols-outlined text-base">article</span>
+              Interview Detail
+            </div>
+          </nav>
+        </aside>
+        <main className="flex min-h-[calc(100vh-5rem)] flex-col">
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
             <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card">
               <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
