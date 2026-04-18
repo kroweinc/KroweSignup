@@ -1022,10 +1022,7 @@ export function DecisionPageClient({
           <div className="mt-4">
             {topCluster ? (
               <div className="dr-card overflow-hidden">
-                <div
-                  className="grid grid-cols-1 md:grid-cols-[3fr_2fr]"
-                  style={{ divideColor: "#ededed" }}
-                >
+                <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] md:divide-x md:divide-[#ededed]">
                   {/* Left: problem signal */}
                   <div className="border-b p-6 md:border-b-0 md:border-r" style={{ borderColor: "#ededed" }}>
                     <Eyebrow color="#a04000">

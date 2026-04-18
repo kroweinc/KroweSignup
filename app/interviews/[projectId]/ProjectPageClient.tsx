@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import InterviewsSidebar from "@/app/interviews/_components/InterviewsSidebar";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { GranolaImportsButton } from "./GranolaImportsButton";
 import type { FeatureSpec, ProblemCluster, DecisionOutput } from "@/lib/interviews/types";
@@ -177,11 +176,7 @@ export function ProjectPageClient({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-        <InterviewsSidebar projectId={projectId} />
-
-        <section className="p-3 sm:p-4">
+    <section className="p-3 sm:p-4">
           <header className="mb-3 flex items-center justify-between border-b border-border/60 pb-3">
             <div className="flex items-center gap-2">
               <Image src="/KroweIcon.png" alt="Krowe" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
@@ -485,8 +480,6 @@ export function ProjectPageClient({
           </div>
 
             </main>
-        </section>
-      </div>
-    </div>
+    </section>
   );
 }

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getUserPrimaryProjectId } from "@/lib/interviews/getUserPrimaryProjectId";
 
 type SidebarNavKey = "interviews" | "imports" | "usage" | "logs" | "script" | "decision" | "businessProfile";
 
@@ -24,13 +25,15 @@ function navClass(active: boolean): string {
   return "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35";
 }
 
-export default function InterviewsSidebar({
+export default async function InterviewsSidebar({
   activeNav,
-  projectId,
+  projectId: projectIdProp,
 }: {
   activeNav?: SidebarNavKey;
   projectId?: string;
 }) {
+  const projectId = projectIdProp ?? (await getUserPrimaryProjectId());
+
   return (
     <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
       <Link
@@ -63,24 +66,28 @@ export default function InterviewsSidebar({
                 {item.label}
               </Link>
             ))}
-            <Link
-              href={projectId ? `/interviews/${projectId}/business-profile` : "/interviews/projects"}
-              className={navClass(activeNav === "businessProfile")}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                apartment
-              </span>
-              Business Profile
-            </Link>
-            <Link
-              href={projectId ? `/interviews/${projectId}/decision` : "/interviews/projects"}
-              className={navClass(activeNav === "decision")}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                analytics
-              </span>
-              Decision
-            </Link>
+            {projectId && (
+              <Link
+                href={`/interviews/${projectId}/business-profile`}
+                className={navClass(activeNav === "businessProfile")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  apartment
+                </span>
+                Business Profile
+              </Link>
+            )}
+            {projectId && (
+              <Link
+                href={`/interviews/${projectId}/decision`}
+                className={navClass(activeNav === "decision")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  analytics
+                </span>
+                Decision
+              </Link>
+            )}
             <Link
               href="/interviews/usage?range=24h"
               className={navClass(activeNav === "usage")}

@@ -1,6 +1,7 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import { ProjectPageClient } from "./ProjectPageClient";
+import InterviewsSidebar from "@/app/interviews/_components/InterviewsSidebar";
 import type { ProblemCluster, DecisionOutput, FeatureSpec } from "@/lib/interviews/types";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 import {
@@ -162,15 +163,20 @@ export default async function ProjectPage({
   const sortedFeatures = [...(((latestDecision?.feature_specs as FeatureSpec[] | null) ?? []) as FeatureSpec[])];
 
   return (
-    <ProjectPageClient
-      project={project}
-      interviews={interviews}
-      projectId={projectId}
-      latestDecision={latestDecision}
-      topCluster={topCluster}
-      allClusters={allClusters}
-      decisionFeatures={sortedFeatures}
-      latestDecisionVerdict={latestDecisionVerdict}
-    />
+    <div className="min-h-screen bg-background">
+      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
+        <InterviewsSidebar projectId={projectId} />
+        <ProjectPageClient
+          project={project}
+          interviews={interviews}
+          projectId={projectId}
+          latestDecision={latestDecision}
+          topCluster={topCluster}
+          allClusters={allClusters}
+          decisionFeatures={sortedFeatures}
+          latestDecisionVerdict={latestDecisionVerdict}
+        />
+      </div>
+    </div>
   );
 }
