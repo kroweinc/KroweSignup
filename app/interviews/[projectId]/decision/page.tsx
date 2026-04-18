@@ -11,7 +11,12 @@ import type {
   DecisionOutput,
   MetaCluster,
 } from "@/lib/interviews/types";
-import type { AnalysisResponse, AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisResponse, AnalysisResult, AnalysisContext, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
+import {
+  fetchSignupAnswersForSession,
+  buildAnalysisAnswerHelpers,
+  STEP_KEYS_SCRIPT,
+} from "@/lib/interviews/founderContextFromSignup";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +44,7 @@ export default async function DecisionPage({
   const [projectRes, decisionResWithAnalysis, clustersRes, interviewsRes] = await Promise.all([
     supabase
       .from("interview_projects")
-      .select("id, name")
+      .select("id, name, session_id, user_id")
       .eq("id", projectId)
       .single(),
     supabase
@@ -82,6 +87,7 @@ export default async function DecisionPage({
   }
 
   const project = projectRes.data;
+  const sessionId = (projectRes.data as unknown as { session_id?: string | null }).session_id ?? null;
   const decisionRows = (decisionRes.data ?? []) as Array<
     DecisionWithId & { analysis_result?: AnalysisResult | null }
   >;
@@ -140,6 +146,49 @@ export default async function DecisionPage({
   );
   const confidencePct = Math.round((decision.confidence_score ?? 0) * 100);
 
+  // Build full AnalysisResponse (with context + signalMetrics) server-side so the client
+  // can render the Hypothesis vs Reality section immediately without a background API fetch.
+  let fullAnalysis: AnalysisResponse | null = null;
+  if (persistedAnalysis && sessionId) {
+    const signupRows = await fetchSignupAnswersForSession(supabase, sessionId, STEP_KEYS_SCRIPT);
+    const { getAnswer, featuresArray } = buildAnalysisAnswerHelpers(signupRows);
+
+    const topQuotesSlim = (topCluster?.supporting_quotes ?? [])
+      .slice(0, 2)
+      .map((q: { text: string; interview_id: string }) => ({ text: q.text, interview_id: q.interview_id }));
+
+    const featureSpecsSlim = featureSpecs.map((f) => ({
+      name: f.name,
+      description: f.description,
+      priority: f.priority,
+    }));
+
+    const context: AnalysisContext = {
+      founderProblem: getAnswer("problem"),
+      founderCustomer: getAnswer("target_customer"),
+      founderFeatures: featuresArray,
+      topProblem: topCluster?.canonical_problem ?? "",
+      topQuotes: topQuotesSlim,
+      customerInsight: persistedAnalysis.breakdown.customerAlignment.reasoning,
+      featureSpecs: featureSpecsSlim,
+    };
+
+    const allQuotes: Array<{ interview_id?: string }> = topCluster?.supporting_quotes ?? [];
+    const uniqueIntervieweeSet = new Set(allQuotes.map((q) => q.interview_id).filter(Boolean));
+    const signalMetrics: SignalStrengthMetrics | null = topCluster
+      ? {
+          interviewCount: interviews.length,
+          uniqueInterviewees: uniqueIntervieweeSet.size,
+          consistencyScore: topCluster.consistency_score ?? 0,
+          avgIntensity: topCluster.avg_intensity ?? 0,
+          frequency: topCluster.frequency ?? 0,
+          clusterScore: topCluster.score ?? 0,
+        }
+      : null;
+
+    fullAnalysis = { ...persistedAnalysis, context, signalMetrics };
+  }
+
   return (
     <DecisionPageClient
       projectId={projectId}
@@ -154,7 +203,7 @@ export default async function DecisionPage({
       sortedFeatures={sortedFeatures}
       confidencePct={confidencePct}
       interviewsSortedIds={interviewsSortedIds}
-      persistedAnalysis={persistedAnalysis}
+      persistedAnalysis={fullAnalysis}
     />
   );
 }

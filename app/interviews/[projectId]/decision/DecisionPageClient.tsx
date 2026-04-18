@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { AllProblemsButton } from "./AllProblemsButton";
-import type { AnalysisResponse, AnalysisResult } from "@/lib/analysis/hypothesisVsReality";
+import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 import type {
   ProblemCluster,
   FeatureSpec,
@@ -37,7 +37,7 @@ type Props = {
   sortedFeatures: FeatureSpec[];
   confidencePct: number;
   interviewsSortedIds: string[];
-  persistedAnalysis: AnalysisResult | null;
+  persistedAnalysis: AnalysisResponse | null;
 };
 
 const DECISION_LABELS: Record<AnalysisResponse["decision"], string> = {
@@ -285,9 +285,7 @@ export function DecisionPageClient({
   const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
     persistedAnalysis ? "ready" : "loading"
   );
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(
-    persistedAnalysis ? (persistedAnalysis as AnalysisResponse) : null
-  );
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(persistedAnalysis);
   const [analysisError, setAnalysisError] = useState("");
   const requestIdRef = useRef(0);
 
@@ -385,14 +383,15 @@ export function DecisionPageClient({
   };
 
   useEffect(() => {
+    // Server already provided complete analysis data (with context + signalMetrics) — skip fetch.
+    if (persistedAnalysis) return;
+
     const controller = new AbortController();
     const requestId = ++requestIdRef.current;
 
-    if (!persistedAnalysis) {
-      setAnalysisResult(null);
-      setAnalysisError("");
-      setAnalysisState("loading");
-    }
+    setAnalysisResult(null);
+    setAnalysisError("");
+    setAnalysisState("loading");
 
     fetch(`/api/interviews/analysis/${projectId}`, { signal: controller.signal })
       .then(async (res) => {
@@ -409,10 +408,8 @@ export function DecisionPageClient({
       })
       .catch((err) => {
         if (controller.signal.aborted || requestId !== requestIdRef.current) return;
-        if (!persistedAnalysis) {
-          setAnalysisError(err instanceof Error ? err.message : "Unknown error");
-          setAnalysisState("error");
-        }
+        setAnalysisError(err instanceof Error ? err.message : "Unknown error");
+        setAnalysisState("error");
       });
 
     return () => controller.abort();
