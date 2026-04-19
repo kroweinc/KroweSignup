@@ -19,10 +19,10 @@ const manageNavItems: NavItem[] = [
 
 function navClass(active: boolean): string {
   if (active) {
-    return "flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-sm font-medium text-interview-brand";
+    return "flex items-center gap-2 rounded-lg bg-interview-brand-tint/70 px-2.5 py-2 text-xs font-medium text-interview-brand";
   }
 
-  return "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35";
+  return "flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interview-brand/35";
 }
 
 export default async function InterviewsSidebar({
@@ -117,7 +117,7 @@ export default async function InterviewsSidebar({
         <div className="space-y-1 rounded-xl border border-border/60 bg-background p-2">
           <Link
             href="/interviews/account?tab=profile"
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           >
             <span className="material-symbols-outlined text-base" aria-hidden>
               person
@@ -126,7 +126,7 @@ export default async function InterviewsSidebar({
           </Link>
           <Link
             href="/interviews/account?tab=security"
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           >
             <span className="material-symbols-outlined text-base" aria-hidden>
               lock
@@ -135,7 +135,7 @@ export default async function InterviewsSidebar({
           </Link>
           <Link
             href="/interviews/account?tab=billing"
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           >
             <span className="material-symbols-outlined text-base" aria-hidden>
               credit_card
