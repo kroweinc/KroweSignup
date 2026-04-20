@@ -5,6 +5,7 @@ import { getUserPrimaryProjectId } from "@/lib/interviews/getUserPrimaryProjectI
 export type SidebarNavKey =
   | "projects"
   | "intel"
+  | "feedback"
   | "workspace"
   | "script"
   | "businessProfile"
@@ -100,6 +101,12 @@ export default async function InterviewsSidebar({
                 inventory_2
               </span>
               Logs
+            </Link>
+            <Link href="/interviews/feedback" className={navClass(activeNav === "feedback")}>
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                feedback
+              </span>
+              Feedback
             </Link>
           </div>
         </div>
