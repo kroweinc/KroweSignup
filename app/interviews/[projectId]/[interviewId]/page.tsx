@@ -1,6 +1,8 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import InterviewDetailClient from "./InterviewDetailClient";
+import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
+import LogoutButton from "@/app/interviews/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -93,20 +95,30 @@ export default async function InterviewDetailPage({
     ? interview.alternatives_used.filter((v): v is string => typeof v === "string").slice(0, 8)
     : [];
 
+  const topbarTitle =
+    interviewNumber != null ? `Interview #${interviewNumber}` : "Interview";
+
   return (
-    <InterviewDetailClient
-      interview={interview}
+    <InterviewsShell
       projectId={projectId}
-      summary={summary}
-      topQuotes={topQuotes}
-      painCount={painCount}
-      interviewNumber={interviewNumber}
-      structuredSegments={segments.length > 0 ? (segments as Array<{ type: "pain" | "context" | "emotion" | "intensity"; text: string; quote?: string; intensity?: number }>) : null}
-      extractedProblems={extractedProblems ?? []}
-      intervieweeName={interview.interviewee_name ?? null}
-      intervieweeContext={interview.interviewee_context ?? null}
-      alternativesUsed={alternativesUsed}
-      currentMethods={competitorsUsed}
-    />
+      activeNav="interview"
+      topbarTitle={topbarTitle}
+      topbarActions={<LogoutButton />}
+    >
+      <InterviewDetailClient
+        interview={interview}
+        projectId={projectId}
+        summary={summary}
+        topQuotes={topQuotes}
+        painCount={painCount}
+        interviewNumber={interviewNumber}
+        structuredSegments={segments.length > 0 ? (segments as Array<{ type: "pain" | "context" | "emotion" | "intensity"; text: string; quote?: string; intensity?: number }>) : null}
+        extractedProblems={extractedProblems ?? []}
+        intervieweeName={interview.interviewee_name ?? null}
+        intervieweeContext={interview.interviewee_context ?? null}
+        alternativesUsed={alternativesUsed}
+        currentMethods={competitorsUsed}
+      />
+    </InterviewsShell>
   );
 }

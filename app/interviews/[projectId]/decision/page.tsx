@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DecisionPageClient } from "./DecisionPageClient";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
+import LogoutButton from "@/app/interviews/LogoutButton";
 import type {
   ProblemCluster,
   FeatureSpec,
@@ -149,7 +150,12 @@ export default async function DecisionPage({
 
   if (!decision || decision.status !== "ready") {
     return (
-      <InterviewsShell activeNav="decision" projectId={projectId} topbarTitle="Decision">
+      <InterviewsShell
+        activeNav="decision"
+        projectId={projectId}
+        topbarTitle={project.name}
+        topbarActions={<LogoutButton />}
+      >
         <div className="min-h-screen bg-background">
           <div className="max-w-7xl mx-auto px-4 py-10">
             <Link href={`/interviews/${projectId}`} className="text-sm text-muted-foreground hover:underline">
@@ -280,7 +286,13 @@ export default async function DecisionPage({
   }
 
   return (
-    <InterviewsShell activeNav="decision" projectId={projectId} topbarTitle="Decision" noPadding>
+    <InterviewsShell
+      activeNav="decision"
+      projectId={projectId}
+      topbarTitle={project.name}
+      topbarActions={<LogoutButton />}
+      noPadding
+    >
       <DecisionPageClient
         projectId={projectId}
         project={project}

@@ -137,3 +137,19 @@ export function getUrlOnboardingScrapeMaxChars(): number {
   }
   return Math.floor(parsed);
 }
+
+export function getRetoolFeedbackWebhookConfig(): {
+  url: string;
+  secret: string;
+  timeoutMs: number;
+} {
+  const url = requireEnv("RETOOL_FEEDBACK_WEBHOOK_URL");
+  const secret = requireEnv("RETOOL_FEEDBACK_WEBHOOK_SECRET");
+
+  const rawTimeout = process.env.RETOOL_FEEDBACK_TIMEOUT_MS?.trim();
+  const parsedTimeout = rawTimeout ? Number(rawTimeout) : NaN;
+  const timeoutMs =
+    Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? Math.floor(parsedTimeout) : 8_000;
+
+  return { url, secret, timeoutMs };
+}

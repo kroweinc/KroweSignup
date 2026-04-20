@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { GranolaImportsButton } from "./GranolaImportsButton";
 import type { FeatureSpec, ProblemCluster, DecisionOutput } from "@/lib/interviews/types";
@@ -176,17 +175,7 @@ export function ProjectPageClient({
   }
 
   return (
-    <section className="p-3 sm:p-4">
-          <header className="mb-3 flex items-center justify-between border-b border-border/60 pb-3">
-            <div className="flex items-center gap-2">
-              <Image src="/KroweIcon.png" alt="Krowe" width={18} height={18} className="h-[18px] w-[18px] rounded-sm" />
-              <h1 className="text-sm font-medium text-foreground">Workspace Console</h1>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <Link href="/interviews" className="hover:underline">All projects</Link>
-            </div>
-          </header>
-
+    <section className="min-w-0">
           <div className="mb-5 rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
             <div className="mb-1 min-w-0">
               <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">

@@ -30,17 +30,17 @@ export default async function NewProjectPage() {
   }
 
   return (
-    <InterviewsShell topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
       <div className="space-y-5">
         <DashboardPageHeader
           title="Create Project"
           description="Shape a clear research brief and launch a project workspace designed for fast interview-driven decisions."
           actions={
             <Link
-              href="/interviews"
+              href="/interviews/projects"
               className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
             >
-              Back to Home
+              Back to projects
             </Link>
           }
         />

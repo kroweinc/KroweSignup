@@ -1,6 +1,7 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
+import LogoutButton from "@/app/interviews/LogoutButton";
 import { InterviewScriptTab } from "../InterviewScriptTab";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,12 @@ export default async function InterviewScriptPage({
   if (error || !project) notFound();
 
   return (
-    <InterviewsShell activeNav="script" projectId={projectId} topbarTitle="Interview Script">
+    <InterviewsShell
+      activeNav="script"
+      projectId={projectId}
+      topbarTitle={project.name}
+      topbarActions={<LogoutButton />}
+    >
       <InterviewScriptTab projectId={projectId} projectName={project.name} />
     </InterviewsShell>
   );
