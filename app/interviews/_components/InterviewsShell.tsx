@@ -1,19 +1,27 @@
 import type { ReactNode } from "react";
-import InterviewsSidebar from "./InterviewsSidebar";
+import InterviewsSidebar, { type SidebarNavKey } from "./InterviewsSidebar";
 import InterviewsTopbar from "./InterviewsTopbar";
 
-type SidebarNavKey = "interviews" | "imports" | "usage" | "logs" | "script" | "decision" | "businessProfile";
+export type { SidebarNavKey };
 
 type Props = {
   activeNav?: SidebarNavKey;
   topbarTitle?: string;
   topbarActions?: ReactNode;
   children: ReactNode;
+  /** Route segment project id — enables “All projects” and keeps workspace links scoped to this project. */
   projectId?: string;
   noPadding?: boolean;
 };
 
-export default function InterviewsShell({ activeNav, topbarTitle, topbarActions, children, projectId, noPadding }: Props) {
+export default function InterviewsShell({
+  activeNav,
+  topbarTitle,
+  topbarActions,
+  children,
+  projectId,
+  noPadding,
+}: Props) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="w-full p-0">

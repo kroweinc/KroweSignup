@@ -2,20 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { getUserPrimaryProjectId } from "@/lib/interviews/getUserPrimaryProjectId";
 
-type SidebarNavKey = "interviews" | "imports" | "usage" | "logs" | "script" | "decision" | "businessProfile";
-
-type NavItem = {
-  key: SidebarNavKey;
-  href: string;
-  label: string;
-  icon: string;
-};
-
-const manageNavItems: NavItem[] = [
-  { key: "interviews", href: "/interviews", label: "Interviews", icon: "forum" },
-  { key: "script", href: "/interviews/script", label: "Interview Script", icon: "description" },
-];
-
+export type SidebarNavKey =
+  | "projects"
+  | "intel"
+  | "workspace"
+  | "script"
+  | "businessProfile"
+  | "decision"
+  | "usage"
+  | "logs"
+  | "imports"
+  | "addInterview"
+  | "interview";
 
 function navClass(active: boolean): string {
   if (active) {
@@ -27,12 +25,15 @@ function navClass(active: boolean): string {
 
 export default async function InterviewsSidebar({
   activeNav,
-  projectId: projectIdProp,
+  projectId: routeProjectId,
 }: {
   activeNav?: SidebarNavKey;
+  /** When set, user is under `/interviews/[projectId]/…`; scoped links and “All projects” use this id. */
   projectId?: string;
 }) {
-  const projectId = projectIdProp ?? (await getUserPrimaryProjectId());
+  const primaryProjectId = await getUserPrimaryProjectId();
+  const linkProjectId = routeProjectId ?? primaryProjectId;
+  const inProjectRoute = Boolean(routeProjectId);
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-border/60 bg-[color-mix(in_srgb,var(--surface-subtle)_75%,white)] p-3">
@@ -52,55 +53,49 @@ export default async function InterviewsSidebar({
         </div>
       </Link>
 
-      <nav aria-label="Primary" className="space-y-3">
+      {inProjectRoute && routeProjectId && (
+        <Link
+          href="/interviews/projects"
+          className={`${navClass(false)} mb-3 text-sm`}
+        >
+          <span className="material-symbols-outlined text-base" aria-hidden>
+            chevron_left
+          </span>
+          All projects
+        </Link>
+      )}
+
+      <nav aria-label="Primary" className="flex flex-1 flex-col space-y-3">
         <div>
           <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            Manage
+            Platform
           </p>
           <div className="space-y-1">
-            {manageNavItems.map((item) => (
-              <Link key={item.key} href={item.href} className={navClass(activeNav === item.key)}>
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            ))}
-            {projectId && (
-              <Link
-                href={`/interviews/${projectId}/business-profile`}
-                className={navClass(activeNav === "businessProfile")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  apartment
-                </span>
-                Business Profile
-              </Link>
-            )}
-            {projectId && (
-              <Link
-                href={`/interviews/${projectId}/decision`}
-                className={navClass(activeNav === "decision")}
-              >
-                <span className="material-symbols-outlined text-base" aria-hidden>
-                  analytics
-                </span>
-                Decision
-              </Link>
-            )}
-            <Link
-              href="/interviews/usage?range=24h"
-              className={navClass(activeNav === "usage")}
-            >
+            <Link href="/interviews/projects" className={navClass(activeNav === "projects")}>
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                workspaces
+              </span>
+              Projects
+            </Link>
+            <Link href="/interviews" className={navClass(activeNav === "intel")}>
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                dashboard
+              </span>
+              Overview
+            </Link>
+            <Link href="/interviews/imports" className={navClass(activeNav === "imports")}>
+              <span className="material-symbols-outlined text-base" aria-hidden>
+                cloud_upload
+              </span>
+              Imports
+            </Link>
+            <Link href="/interviews/usage?range=24h" className={navClass(activeNav === "usage")}>
               <span className="material-symbols-outlined text-base" aria-hidden>
                 insights
               </span>
               Usage
             </Link>
-            <Link
-              href="/interviews/logs"
-              className={navClass(activeNav === "logs")}
-            >
+            <Link href="/interviews/logs" className={navClass(activeNav === "logs")}>
               <span className="material-symbols-outlined text-base" aria-hidden>
                 inventory_2
               </span>
@@ -108,6 +103,61 @@ export default async function InterviewsSidebar({
             </Link>
           </div>
         </div>
+
+        {linkProjectId && (
+          <div>
+            <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Workspace
+            </p>
+            <div className="space-y-1">
+              <Link
+                href={`/interviews/${linkProjectId}`}
+                className={navClass(activeNav === "workspace" || activeNav === "interview")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  forum
+                </span>
+                Interviews
+              </Link>
+              <Link
+                href={`/interviews/${linkProjectId}/script`}
+                className={navClass(activeNav === "script")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  description
+                </span>
+                Interview Script
+              </Link>
+              <Link
+                href={`/interviews/${linkProjectId}/business-profile`}
+                className={navClass(activeNav === "businessProfile")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  apartment
+                </span>
+                Business Profile
+              </Link>
+              <Link
+                href={`/interviews/${linkProjectId}/decision`}
+                className={navClass(activeNav === "decision")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  analytics
+                </span>
+                Decision
+              </Link>
+              <Link
+                href={`/interviews/${linkProjectId}/add`}
+                className={navClass(activeNav === "addInterview")}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  add_circle
+                </span>
+                Add interview
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       <div className="mt-auto pt-4">

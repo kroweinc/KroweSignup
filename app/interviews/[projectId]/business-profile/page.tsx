@@ -1,6 +1,7 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
+import LogoutButton from "@/app/interviews/LogoutButton";
 import { BusinessProfileTab } from "../BusinessProfileTab";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,12 @@ export default async function BusinessProfilePage({
   if (error || !project) notFound();
 
   return (
-    <InterviewsShell activeNav="businessProfile" projectId={projectId} topbarTitle="Business Profile">
+    <InterviewsShell
+      activeNav="businessProfile"
+      projectId={projectId}
+      topbarTitle="Business Profile"
+      topbarActions={<LogoutButton />}
+    >
       <BusinessProfileTab projectId={projectId} />
     </InterviewsShell>
   );

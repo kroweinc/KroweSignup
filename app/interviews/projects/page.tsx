@@ -29,7 +29,7 @@ export default async function ProjectsPage() {
 
   if (error) {
     return (
-      <InterviewsShell topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+      <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
         <div>
           <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
             Failed to load projects: {error.message}
@@ -42,7 +42,7 @@ export default async function ProjectsPage() {
   const projects = (data ?? []) as DashboardProject[];
 
   return (
-    <InterviewsShell topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
       <div className="space-y-5">
         <DashboardPageHeader
           title="Projects"
