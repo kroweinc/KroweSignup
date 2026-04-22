@@ -17,6 +17,8 @@ type Props = {
   noPadding?: boolean;
   /** Set true on pages that are valid destinations when the user has no project (e.g. /interviews/new). */
   allowWithoutProject?: boolean;
+  /** Accepted for compatibility with master-branch page imports; has no effect in this shell. */
+  skipEntrance?: boolean;
 };
 
 export default async function InterviewsShell({

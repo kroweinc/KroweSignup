@@ -13,7 +13,10 @@ export type SidebarNavKey =
   | "decision"
   | "imports"
   | "addInterview"
-  | "interview";
+  | "interview"
+  | "account"
+  | "usage"
+  | "logs";
 
 type NavItem = {
   key: SidebarNavKey;

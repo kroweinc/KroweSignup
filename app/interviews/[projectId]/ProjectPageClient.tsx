@@ -3,6 +3,12 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import { ProjectStatusPill } from "@/app/components/krowe/ProjectStatusPill";
+import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
+import { KROWE_EASE } from "@/lib/motion/kroweEase";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { GranolaDrawer, type GranolaInboxItem, type AssignedGranolaItem } from "./GranolaDrawer";
 import { AnalysisModal } from "./AnalysisModal";
@@ -158,6 +164,15 @@ function ConfRing({ pct }: { pct: number }) {
   );
 }
 
+const STAG = 0.06;
+function fadeUp(i: number, reduceMotion: boolean) {
+  return {
+    initial: reduceMotion ? {} : { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.4, delay: i * STAG, ease: KROWE_EASE },
+  };
+}
+
 export function ProjectPageClient({
   project,
   interviews,
@@ -176,6 +191,7 @@ export function ProjectPageClient({
   liveSignalsToday,
 }: Props) {
   const router = useRouter();
+  const reduceMotion = Boolean(useReducedMotion());
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
@@ -218,7 +234,7 @@ export function ProjectPageClient({
     }).catch(() => {});
 
     let attempts = 0;
-    const MAX_ATTEMPTS = 18; // 18 * 5s = 90s cap
+    const MAX_ATTEMPTS = 18;
     pollIntervalRef.current = setInterval(() => {
       attempts += 1;
       router.refresh();
@@ -237,7 +253,6 @@ export function ProjectPageClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stop polling as soon as clusters land.
   useEffect(() => {
     if (allClusters.length > 0 && pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
@@ -290,364 +305,368 @@ export function ProjectPageClient({
 
           <section className="flex min-h-screen flex-col">
 
-            {/* Topbar */}
-            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sticky top-0 bg-card z-10">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="hover:text-foreground">Krowe</span>
-                <span className="text-border">/</span>
-                <span className="font-medium text-foreground">Interviews</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="hidden sm:flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground opacity-50 cursor-not-allowed"
-                  title="Coming soon"
-                >
-                  <span className="material-symbols-outlined text-[14px]">search</span>
-                  <span className="hidden md:block">Search interviews…</span>
-                  <span className="rounded bg-muted px-1 font-mono text-[10px] hidden md:block">⌘K</span>
-                </div>
-                <button
-                  onClick={() => setDrawerOpen(true)}
-                  className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[14px]">cloud_sync</span>
-                  Granola
-                  {granolaCount > 0 && (
-                    <span className="rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
-                      {granolaCount}
-                    </span>
-                  )}
-                </button>
-                <Link
-                  href={`/interviews/${projectId}/add`}
-                  className="flex items-center gap-1 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[14px]">add</span>
-                  <span className="hidden sm:block">Add interview</span>
-                </Link>
-                <RunAnalysisButton
-                  projectId={projectId}
-                  interviewCount={project.interview_count}
-                  projectStatus={project.status}
-                  onAnalysisStart={() => {
-                    setIsProcessing(true);
-                    setAnalysisModalOpen(true);
-                  }}
+            {/* Page header */}
+            <div className="sticky top-0 z-10 border-b border-border/60 bg-card px-4 py-3 sm:px-5">
+              <InterviewsPageWidth>
+                <ContentHeader
+                  breadcrumbs={[
+                    { label: "Interviews", href: "/interviews" },
+                    { label: project.name },
+                  ]}
+                  title={project.name}
+                  description="Your customer signal, in one place."
+                  actions={
+                    <>
+                      <button
+                        onClick={() => setDrawerOpen(true)}
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">cloud_sync</span>
+                        Granola
+                        {granolaCount > 0 && (
+                          <span className="rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
+                            {granolaCount}
+                          </span>
+                        )}
+                      </button>
+                      <KroweLinkButton href={`/interviews/${projectId}/add`} variant="secondary">
+                        <span className="material-symbols-outlined text-[14px]">add</span>
+                        <span className="hidden sm:block">Add interview</span>
+                      </KroweLinkButton>
+                      <RunAnalysisButton
+                        projectId={projectId}
+                        interviewCount={project.interview_count}
+                        projectStatus={project.status}
+                        onAnalysisStart={() => {
+                          setIsProcessing(true);
+                          setAnalysisModalOpen(true);
+                        }}
+                      />
+                    </>
+                  }
                 />
-              </div>
+              </InterviewsPageWidth>
             </div>
 
             {/* Hero */}
-            <div className="border-b border-border/60 bg-gradient-to-b from-interview-brand-tint/20 to-transparent px-5 py-6 sm:px-6">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    <span className="material-symbols-outlined text-[13px] text-interview-brand">forum</span>
-                    Interviews
-                    <span className="text-border">·</span>
-                    <span className="flex items-center gap-1 rounded-full border border-border/60 bg-card px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-foreground">
-                      <span className={`inline-block h-1.5 w-1.5 rounded-full ${project.status === "processing" ? "bg-warning animate-pulse" : project.status === "ready" ? "bg-success" : "bg-muted-foreground"}`} />
-                      {project.status === "processing" ? "Analyzing" : project.status === "ready" ? "Ready" : "Collecting"}
-                    </span>
-                  </div>
-                  <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">
-                    Your customer signal, in one place.
-                  </h1>
-                  <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
-                    Uncovering pain, validating signal, and building conviction — one interview at a time.
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">groups</span>
-                      <strong className="text-foreground">{interviews.length}</strong> interviews
+            <motion.div
+              {...fadeUp(0, reduceMotion)}
+              className="border-b border-border/60 bg-gradient-to-b from-interview-brand-tint/20 to-transparent px-4 py-6 sm:px-5"
+            >
+              <InterviewsPageWidth>
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      <span className="material-symbols-outlined text-[13px] text-interview-brand">forum</span>
+                      Interviews
+                      <span className="text-border">·</span>
+                      <ProjectStatusPill status={project.status} />
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">flag</span>
-                      target <strong className="text-foreground">12</strong>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">bolt</span>
-                      <strong className="text-foreground">{liveSignalsToday}</strong> new today
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">schedule</span>
-                      last analysis <strong className="text-foreground">{formatTimeAgo(latestDecision?.updated_at)}</strong>
-                    </div>
-                  </div>
-                </div>
-                {/* Verdict card */}
-                <div className="w-full xl:w-72 shrink-0">
-                  <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-soft">
-                    <div className="flex items-center gap-4 mb-3">
-                      <ConfRing pct={animatedConf} />
-                      <div className="flex-1">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verdict</p>
-                          <p className={`text-sm font-bold ${verdictClass}`}>{verdictLabel}</p>
-                        </div>
+                    <h1 className="font-serif text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">
+                      Your customer signal, in one place.
+                    </h1>
+                    <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
+                      Uncovering pain, validating signal, and building conviction — one interview at a time.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">groups</span>
+                        <strong className="text-foreground">{interviews.length}</strong> interviews
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">flag</span>
+                        target <strong className="text-foreground">12</strong>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">bolt</span>
+                        <strong className="text-foreground">{liveSignalsToday}</strong> new today
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        last analysis <strong className="text-foreground">{formatTimeAgo(latestDecision?.updated_at)}</strong>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-[10px] text-muted-foreground">
-                      <span>Analyzed {formatTimeAgo(latestDecision?.updated_at)}</span>
-                      <span className="flex items-center gap-1 text-interview-brand font-semibold">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-interview-brand animate-pulse" />
-                        Live
-                      </span>
+                  </div>
+
+                  {/* Verdict card */}
+                  <div className="w-full xl:w-72 shrink-0">
+                    <div className="rounded-[var(--radius-lg)] border border-border/80 bg-card p-4 shadow-[var(--shadow-1)]">
+                      <div className="flex items-center gap-4 mb-3">
+                        <ConfRing pct={animatedConf} />
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verdict</p>
+                          <p className={`text-sm font-bold font-serif ${verdictClass}`}>{verdictLabel}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-[10px] text-muted-foreground">
+                        <span>Analyzed {formatTimeAgo(latestDecision?.updated_at)}</span>
+                        <span className="flex items-center gap-1 text-interview-brand font-semibold">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-interview-brand animate-pulse" />
+                          Live
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </InterviewsPageWidth>
+            </motion.div>
 
             {/* Body */}
             <div className="flex-1 flex flex-col xl:grid xl:grid-cols-[1fr_300px]">
 
               {/* Interview list */}
-              <div className="border-r border-border/60 p-4 sm:p-5">
-
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    Interviews{" "}
-                    <span className="ml-1 font-normal text-muted-foreground">
-                      {filtered.length} of {interviews.length}
-                    </span>
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setDrawerOpen(true)}
-                      className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/50 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
-                      {granolaCount > 0 ? `${granolaCount} new in Granola` : "Granola"}
-                    </button>
-                    <button
-                      disabled
-                      title="Coming soon"
-                      className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">mic</span>
-                      Start live
-                    </button>
-                    <button
-                      disabled
-                      title="Coming soon"
-                      className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">upload_file</span>
-                      Upload
-                    </button>
-                  </div>
-                </div>
-
-                {/* Filter bar */}
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <div className="flex rounded-lg border border-border/60 bg-muted/30 p-0.5 text-[11px]">
-                    {(["all", "granola", "manual", "live"] as const).map((k) => {
-                      const labels = { all: "All", granola: "Granola", manual: "Manual", live: "Live" };
-                      const c = k === "all" ? counts.all : k === "granola" ? counts.granola : k === "manual" ? counts.manual : counts.live;
-                      return (
-                        <button
-                          key={k}
-                          onClick={() => setSourceFilter(k)}
-                          className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                            sourceFilter === k
-                              ? "bg-card text-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {labels[k]} <span className="ml-0.5 opacity-60">{c}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="h-4 w-px bg-border/60" />
-                  {(["High", "Medium", "Low"] as InterviewSignalLabel[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSignalFilter(signalFilter === s ? null : s)}
-                      className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                        signalFilter === s
-                          ? "border-interview-brand/50 bg-interview-brand-tint text-interview-brand"
-                          : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[12px]">sensors</span>
-                      {s} signal
-                    </button>
-                  ))}
-                  <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <span className="material-symbols-outlined text-[13px]">sort</span>
-                    Recent first
-                    <span className="material-symbols-outlined text-[12px]">expand_more</span>
-                  </div>
-                </div>
-
-                {deleteError && (
-                  <div className="mb-4 rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
-                    {deleteError}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {filtered.length === 0 ? (
-                    <div className="rounded-2xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
-                      <span className="material-symbols-outlined text-2xl mb-2 block text-muted-foreground/50">filter_alt_off</span>
-                      No interviews match this filter.
-                      <button
-                        onClick={() => { setSourceFilter("all"); setSignalFilter(null); }}
-                        className="mt-2 block mx-auto text-xs text-interview-brand hover:underline"
-                      >
-                        Clear filters
-                      </button>
-                    </div>
-                  ) : (
-                    filtered.map((interview, i) => {
-                      const topProblem = interview.top_problem;
-                      const isPending = interview.status === "pending";
-                      const problemSnippet =
-                        topProblem?.problem_text ??
-                        (isPending ? "Processing…" : "No key problem extracted yet.");
-                      const quote =
-                        topProblem?.quote ??
-                        (isPending ? "Processing…" : "No direct quote extracted yet.");
-                      const tags = interview.tags ?? [];
-
-                      return (
-                        <div
-                          key={interview.id}
-                          className="group relative rounded-2xl border border-border/60 bg-card shadow-soft overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
-                        >
-                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${signalBarClass(interview.signal_label)}`} />
-
-                          <div className="pl-5 pr-4 pt-4 pb-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
-                                  {initialForName(interview.interviewee_name, i)}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h3 className="text-sm font-semibold text-foreground truncate">
-                                      {interview.interviewee_name ?? `Interview #${i + 1}`}
-                                    </h3>
-                                    {interview.source === "granola" && (
-                                      <span className="rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
-                                        Granola
-                                      </span>
-                                    )}
-                                    {interview.source === "manual" && (
-                                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                                        Manual
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {interview.interviewee_context ?? "No context provided"}
-                                    <span className="mx-1.5 text-border">·</span>
-                                    {formatTimeAgo(interview.created_at)}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 ${signalPillClass(interview.signal_label)}`}>
-                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
-                                  {interview.signal_label} signal
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (deleteLoadingId) return;
-                                    const confirmed = window.confirm("Delete this interview? This cannot be undone.");
-                                    if (!confirmed) return;
-                                    void handleDeleteInterview(interview.id);
-                                  }}
-                                  disabled={deleteLoadingId === interview.id}
-                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                  aria-label="Delete interview"
-                                >
-                                  <span className="material-symbols-outlined text-[14px] leading-none">
-                                    {deleteLoadingId === interview.id ? "hourglass_top" : "delete"}
-                                  </span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-3 px-5 pt-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-border/50 bg-muted/30 p-3">
-                              <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                                <span className="material-symbols-outlined text-[12px]">error</span>
-                                Key problem
-                              </div>
-                              <p className="text-xs text-foreground leading-relaxed">{problemSnippet}</p>
-                            </div>
-                            <div className="rounded-xl border border-border/50 bg-muted/30 p-3">
-                              <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                                <span className="material-symbols-outlined text-[12px]">format_quote</span>
-                                Direct quote
-                              </div>
-                              <p className="text-xs italic text-muted-foreground leading-relaxed">
-                                &ldquo;{quote}&rdquo;
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 px-5 py-2.5 mt-1 border-t border-border/40">
-                            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-                              {tags.map((tag) => (
-                                <span key={tag} className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
-                                  #{tag}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Link
-                                href={`/interviews/${projectId}/${interview.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[11px]">north_east</span>
-                                Open
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-
-                  {/* Empty add CTA */}
-                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-5 text-center">
-                    <span className="material-symbols-outlined text-2xl text-muted-foreground/50 mb-2 block">add_circle</span>
-                    <p className="text-sm text-muted-foreground mb-3">Add more interviews to strengthen the signal</p>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
+              <motion.div
+                {...fadeUp(1, reduceMotion)}
+                className="border-r border-border/60 p-4 sm:p-5"
+              >
+                <InterviewsPageWidth>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="font-serif text-sm font-semibold text-foreground">
+                      Interviews{" "}
+                      <span className="ml-1 font-sans font-normal text-muted-foreground">
+                        {filtered.length} of {interviews.length}
+                      </span>
+                    </h2>
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setDrawerOpen(true)}
-                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background transition-colors"
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
-                        Import from Granola
+                        {granolaCount > 0 ? `${granolaCount} new in Granola` : "Granola"}
                       </button>
-                      <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                      <button
+                        disabled
+                        title="Coming soon"
+                        className="flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
+                      >
                         <span className="material-symbols-outlined text-[13px]">mic</span>
-                        Record live
+                        Start live
                       </button>
-                      <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                      <button
+                        disabled
+                        title="Coming soon"
+                        className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground opacity-50 cursor-not-allowed"
+                      >
                         <span className="material-symbols-outlined text-[13px]">upload_file</span>
-                        Upload transcript
+                        Upload
                       </button>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  {/* Filter bar */}
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <div className="flex rounded-lg border border-border/60 bg-muted/30 p-0.5 text-[11px]">
+                      {(["all", "granola", "manual", "live"] as const).map((k) => {
+                        const labels = { all: "All", granola: "Granola", manual: "Manual", live: "Live" };
+                        const c = k === "all" ? counts.all : k === "granola" ? counts.granola : k === "manual" ? counts.manual : counts.live;
+                        return (
+                          <button
+                            key={k}
+                            onClick={() => setSourceFilter(k)}
+                            className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                              sourceFilter === k
+                                ? "bg-card text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {labels[k]} <span className="ml-0.5 opacity-60">{c}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="h-4 w-px bg-border/60" />
+                    {(["High", "Medium", "Low"] as InterviewSignalLabel[]).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSignalFilter(signalFilter === s ? null : s)}
+                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                          signalFilter === s
+                            ? "border-interview-brand/50 bg-interview-brand-tint text-interview-brand"
+                            : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[12px]">sensors</span>
+                        {s} signal
+                      </button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <span className="material-symbols-outlined text-[13px]">sort</span>
+                      Recent first
+                      <span className="material-symbols-outlined text-[12px]">expand_more</span>
+                    </div>
+                  </div>
+
+                  {deleteError && (
+                    <div className="mb-4 rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
+                      {deleteError}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {filtered.length === 0 ? (
+                      <div className="rounded-[var(--radius-lg)] border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
+                        <span className="material-symbols-outlined text-2xl mb-2 block text-muted-foreground/50">filter_alt_off</span>
+                        No interviews match this filter.
+                        <button
+                          onClick={() => { setSourceFilter("all"); setSignalFilter(null); }}
+                          className="mt-2 block mx-auto text-xs text-interview-brand hover:underline"
+                        >
+                          Clear filters
+                        </button>
+                      </div>
+                    ) : (
+                      filtered.map((interview, i) => {
+                        const topProblem = interview.top_problem;
+                        const isPending = interview.status === "pending";
+                        const problemSnippet =
+                          topProblem?.problem_text ??
+                          (isPending ? "Processing…" : "No key problem extracted yet.");
+                        const quote =
+                          topProblem?.quote ??
+                          (isPending ? "Processing…" : "No direct quote extracted yet.");
+                        const tags = interview.tags ?? [];
+
+                        return (
+                          <div
+                            key={interview.id}
+                            className="group relative rounded-[var(--radius-lg)] border border-border/80 bg-card shadow-[var(--shadow-1)] overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-2)]"
+                          >
+                            <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${signalBarClass(interview.signal_label)}`} />
+
+                            <div className="pl-5 pr-4 pt-4 pb-0">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
+                                    {initialForName(interview.interviewee_name, i)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h3 className="text-sm font-semibold text-foreground truncate">
+                                        {interview.interviewee_name ?? `Interview #${i + 1}`}
+                                      </h3>
+                                      {interview.source === "granola" && (
+                                        <span className="rounded-full bg-interview-brand-tint px-1.5 py-0.5 text-[10px] font-bold text-interview-brand">
+                                          Granola
+                                        </span>
+                                      )}
+                                      {interview.source === "manual" && (
+                                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                          Manual
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {interview.interviewee_context ?? "No context provided"}
+                                      <span className="mx-1.5 text-border">·</span>
+                                      {formatTimeAgo(interview.created_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 ${signalPillClass(interview.signal_label)}`}>
+                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+                                    {interview.signal_label} signal
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (deleteLoadingId) return;
+                                      const confirmed = window.confirm("Delete this interview? This cannot be undone.");
+                                      if (!confirmed) return;
+                                      void handleDeleteInterview(interview.id);
+                                    }}
+                                    disabled={deleteLoadingId === interview.id}
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                    aria-label="Delete interview"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px] leading-none">
+                                      {deleteLoadingId === interview.id ? "hourglass_top" : "delete"}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 px-5 pt-3 sm:grid-cols-2">
+                              <div className="rounded-[var(--radius-sm)] border border-border/50 bg-muted/30 p-3">
+                                <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                  <span className="material-symbols-outlined text-[12px]">error</span>
+                                  Key problem
+                                </div>
+                                <p className="text-xs text-foreground leading-relaxed">{problemSnippet}</p>
+                              </div>
+                              <div className="rounded-[var(--radius-sm)] border border-border/50 bg-muted/30 p-3">
+                                <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                  <span className="material-symbols-outlined text-[12px]">format_quote</span>
+                                  Direct quote
+                                </div>
+                                <p className="text-xs italic text-muted-foreground leading-relaxed">
+                                  &ldquo;{quote}&rdquo;
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 px-5 py-2.5 mt-1 border-t border-border/40">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+                                {tags.map((tag) => (
+                                  <span key={tag} className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Link
+                                  href={`/interviews/${projectId}/${interview.id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-[11px]">north_east</span>
+                                  Open
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+
+                    {/* Empty add CTA */}
+                    <div className="rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/20 p-5 text-center">
+                      <span className="material-symbols-outlined text-2xl text-muted-foreground/50 mb-2 block">add_circle</span>
+                      <p className="text-sm text-muted-foreground mb-3">Add more interviews to strengthen the signal</p>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          onClick={() => setDrawerOpen(true)}
+                          className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
+                          Import from Granola
+                        </button>
+                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                          <span className="material-symbols-outlined text-[13px]">mic</span>
+                          Record live
+                        </button>
+                        <button disabled title="Coming soon" className="flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                          <span className="material-symbols-outlined text-[13px]">upload_file</span>
+                          Upload transcript
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </InterviewsPageWidth>
+              </motion.div>
 
               {/* Live Insights Rail */}
-              <div className="bg-live-insights-bg p-4 sm:p-5 space-y-5 rounded-xl self-start">
+              <motion.div
+                {...fadeUp(2, reduceMotion)}
+                className="bg-live-insights-bg p-4 sm:p-5 space-y-5 rounded-[var(--radius-lg)] self-start"
+              >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="flex items-center gap-1.5 text-sm font-semibold text-live-insights-foreground">
+                    <h2 className="font-serif flex items-center gap-1.5 text-sm font-semibold text-live-insights-foreground">
                       <span className="material-symbols-outlined text-[14px] text-interview-brand">auto_awesome</span>
                       Live insights
                     </h2>
@@ -662,7 +681,7 @@ export function ProjectPageClient({
                 </div>
 
                 {/* Confidence meter */}
-                <div className="rounded-xl border border-live-insights-border bg-live-insights-surface p-3.5">
+                <div className="rounded-[var(--radius-md)] border border-live-insights-border bg-live-insights-surface p-3.5">
                   <div className="flex items-end justify-between mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-live-insights-muted">Confidence</span>
                     <span className="text-xl font-bold text-interview-brand">{animatedConf}%</span>
@@ -741,7 +760,7 @@ export function ProjectPageClient({
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             </div>
           </section>
         </div>
