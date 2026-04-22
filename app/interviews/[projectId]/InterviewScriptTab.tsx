@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { arrayMove } from "@dnd-kit/sortable";
 
+import { KroweButton } from "@/app/components/krowe/KroweButton";
 import type { InterviewScript } from "@/lib/interviews/generateScript";
 import {
   buildInterviewScriptFlowGraph,
@@ -394,24 +395,28 @@ export function InterviewScriptTab({
 
   if (loading) {
     return (
-      <div className="h-full min-h-[22rem] flex flex-col items-center justify-center gap-3 text-muted-foreground px-6">
-        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-        <p className="text-sm">Generating your interview script…</p>
+      <div className="flex min-h-[20rem] flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-muted-foreground">
+        <div className="h-6 w-6 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Composing your runbook</p>
+          <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+            We are shaping sections, probes, and closing from your workspace context — hang tight.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="h-full min-h-[22rem] flex flex-col items-center justify-center gap-3 text-muted-foreground px-6">
-        <p className="text-sm text-danger">{error}</p>
-        <button
-          type="button"
-          onClick={() => fetchScript()}
-          className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
-        >
-          Retry
-        </button>
+      <div className="flex min-h-[20rem] flex-1 flex-col items-center justify-center gap-4 px-6 py-12">
+        <div className="max-w-md rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-5 py-4 text-center shadow-[var(--shadow-1)]">
+          <p className="text-sm font-semibold text-danger">Script could not load</p>
+          <p className="mt-2 text-xs text-danger/90">{error}</p>
+          <KroweButton type="button" variant="secondary" size="sm" className="mt-4" onClick={() => void fetchScript()}>
+            Retry
+          </KroweButton>
+        </div>
       </div>
     );
   }
@@ -419,15 +424,13 @@ export function InterviewScriptTab({
   if (!script) return null;
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col bg-background">
-      {/* Founder Console header */}
-      <div className="shrink-0 border-b border-border/60 bg-background px-4 py-3.5 md:px-5">
+    <div className="flex min-h-0 flex-1 w-full flex-col bg-transparent">
+      {/* Founder Console toolbar */}
+      <div className="shrink-0 border-b border-border/80 bg-surface-subtle/60 px-4 py-3.5 backdrop-blur-sm md:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              Founder Console
-            </p>
-            <nav className="flex items-center gap-1 border-b border-transparent">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Founder console</p>
+            <nav className="flex items-center gap-0.5 rounded-full border border-border/70 bg-background/80 p-0.5">
               {(
                 [
                   ["nodes", "Nodes"],
@@ -438,10 +441,10 @@ export function InterviewScriptTab({
                   key={id}
                   type="button"
                   onClick={() => setConsoleTab(id)}
-                  className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-[var(--duration-fast)] ${
                     consoleTab === id
-                      ? "border-interview-brand text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "bg-primary-soft text-primary shadow-[var(--shadow-1)]"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {label}
@@ -449,29 +452,26 @@ export function InterviewScriptTab({
               ))}
             </nav>
           </div>
-          <div className="flex flex-wrap items-center gap-2 justify-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search canvas…"
-              className="h-9 w-full min-w-[12rem] max-w-xs rounded-full border border-border/80 bg-background px-3 text-xs outline-none transition focus:border-interview-brand/50 focus:ring-2 focus:ring-interview-brand/10"
+              className="h-9 w-full min-w-[12rem] max-w-xs rounded-full border border-border/80 bg-background px-3 text-xs text-foreground outline-none transition-shadow duration-[var(--duration-fast)] placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/25"
               aria-label="Search canvas"
             />
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-interview-brand to-primary-hover px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-95"
-            >
+            <KroweButton type="button" size="sm" onClick={() => void handleCopy()}>
               {copied ? "Copied" : "Deploy script"}
-            </button>
-            <button
+            </KroweButton>
+            <KroweButton
               type="button"
-              onClick={() => fetchScript(true)}
+              variant="secondary"
+              size="sm"
               disabled={regenerating}
-              className="rounded-full border border-border/80 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 disabled:opacity-50"
+              onClick={() => void fetchScript(true)}
             >
               {regenerating ? "Regenerating…" : "Regenerate"}
-            </button>
+            </KroweButton>
           </div>
         </div>
       </div>

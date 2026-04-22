@@ -1,7 +1,7 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
-import { after } from "next/server";
 import { ProjectPageClient } from "./ProjectPageClient";
+import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
 import type { ProblemCluster, DecisionOutput, FeatureSpec } from "@/lib/interviews/types";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 import {
@@ -11,8 +11,6 @@ import {
   type InterviewSignalMetrics,
 } from "@/lib/interviews/interviewSignal";
 import { deriveOnboardingCompletion } from "@/lib/interviews/businessProfile";
-import { deriveSource } from "@/lib/interviews/sourceForInterview";
-import { buildActivityStream } from "@/lib/interviews/activityStream";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +20,9 @@ type Interview = {
   created_at: string;
   interviewee_name: string | null;
   interviewee_context: string | null;
-  tags: string[] | null;
   high_signal: boolean;
   signal_label: InterviewSignalLabel;
   signal_metrics: InterviewSignalMetrics;
-  top_problem: { problem_text: string | null; quote: string | null } | null;
 };
 
 type Project = {
@@ -57,7 +53,7 @@ export default async function ProjectPage({
   const { projectId } = await params;
   const supabase = await createInterviewAuthClient();
 
-  const [projectRes, interviewsRes, decisionResWithAnalysis, clustersRes, granolaAssignedRes, granolaUnassignedRes, granolaConnectionRes] = await Promise.all([
+  const [projectRes, interviewsRes, decisionResWithAnalysis, clustersRes] = await Promise.all([
     supabase
       .from("interview_projects")
       .select(
@@ -67,7 +63,7 @@ export default async function ProjectPage({
       .single(),
     supabase
       .from("interviews")
-      .select("id, status, created_at, interviewee_name, interviewee_context, tags, extracted_problems(problem_text, supporting_quote, verbatim_quote, intensity_score, confidence)")
+      .select("id, status, created_at, interviewee_name, interviewee_context")
       .eq("project_id", projectId)
       .order("created_at", { ascending: true }),
     supabase
@@ -81,34 +77,14 @@ export default async function ProjectPage({
     supabase
       .from("problem_clusters")
       .select(
-        "id, canonical_problem, frequency, avg_intensity, consistency_score, score, supporting_quotes, member_problem_ids, category, updated_at"
+        "id, canonical_problem, frequency, avg_intensity, consistency_score, score, supporting_quotes, member_problem_ids, category"
       )
       .eq("project_id", projectId)
       .order("score", { ascending: false }),
-    supabase
-      .from("granola_inbox_items")
-      .select("id, title, owner_name, granola_updated_at, assigned_interview_id")
-      .eq("assigned_project_id", projectId)
-      .order("granola_updated_at", { ascending: false }),
-    supabase
-      .from("granola_inbox_items")
-      .select("id, title, owner_name, owner_email, granola_updated_at, transcript_preview")
-      .eq("assignment_status", "unassigned")
-      .order("granola_updated_at", { ascending: false })
-      .limit(50),
-    supabase
-      .from("granola_connections")
-      .select("status, last_sync_completed_at")
-      .eq("status", "active")
-      .limit(1),
   ]);
 
   if (projectRes.error || !projectRes.data) {
     notFound();
-  }
-
-  if (interviewsRes.error) {
-    console.error("[ProjectPage] interviews query failed:", interviewsRes.error.message, "— check that migration 025_interviews_tags.sql has been applied");
   }
 
   let decisionRes = decisionResWithAnalysis;
@@ -131,73 +107,48 @@ export default async function ProjectPage({
     const onboarding = await deriveOnboardingCompletion(supabase, project.session_id);
     if (onboarding.completed) {
       const nowIso = new Date().toISOString();
+      await supabase
+        .from("interview_projects")
+        .update({
+          onboarding_mode: onboarding.onboardingMode,
+          onboarding_completed_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("id", projectId);
       project.onboarding_mode = onboarding.onboardingMode;
       project.onboarding_completed_at = nowIso;
-      after(async () => {
-        await supabase
-          .from("interview_projects")
-          .update({
-            onboarding_mode: onboarding.onboardingMode,
-            onboarding_completed_at: nowIso,
-            updated_at: nowIso,
-          })
-          .eq("id", projectId);
-      });
     }
   }
-  const granolaAssigned = (granolaAssignedRes.data ?? []) as Array<{
-    id: string;
-    title: string | null;
-    owner_name: string | null;
-    granola_updated_at: string;
-    assigned_interview_id: string | null;
+  const interviewsRaw = (interviewsRes.data ?? []) as Array<Omit<Interview, "high_signal" | "signal_label" | "signal_metrics">>;
+  const interviewIds = interviewsRaw.map((i) => i.id);
+  const extractedProblemsRes = interviewIds.length
+    ? await supabase
+        .from("extracted_problems")
+        .select("interview_id, intensity_score, confidence")
+        .in("interview_id", interviewIds)
+    : { data: [] };
+  const extractedProblems = (extractedProblemsRes.data ?? []) as Array<{
+    interview_id: string;
+    intensity_score: number | null;
+    confidence: number | null;
   }>;
-  const granolaUnassigned = (granolaUnassignedRes.data ?? []) as Array<{
-    id: string;
-    title: string | null;
-    owner_name: string | null;
-    owner_email: string | null;
-    granola_updated_at: string;
-    transcript_preview: string;
-  }>;
-  const granolaConnection = (granolaConnectionRes.data ?? [])[0] as {
-    status: string;
-    last_sync_completed_at: string | null;
-  } | undefined;
-  const granolaCount = granolaUnassigned.length;
-
-  const interviewsRaw = (interviewsRes.data ?? []) as Array<
-    Omit<Interview, "high_signal" | "signal_label" | "signal_metrics"> & {
-      extracted_problems: Array<{
-        problem_text: string | null;
-        supporting_quote: string | null;
-        verbatim_quote: string | null;
-        intensity_score: number | null;
-        confidence: number | null;
-      }>;
-    }
-  >;
+  const problemsByInterviewId = new Map<string, Array<{ intensity_score: number | null; confidence: number | null }>>();
+  for (const row of extractedProblems) {
+    const existing = problemsByInterviewId.get(row.interview_id) ?? [];
+    existing.push({
+      intensity_score: row.intensity_score,
+      confidence: row.confidence,
+    });
+    problemsByInterviewId.set(row.interview_id, existing);
+  }
   const interviews = interviewsRaw.map((interview) => {
-    const problems = interview.extracted_problems ?? [];
+    const problems = problemsByInterviewId.get(interview.id) ?? [];
     const signal = computeInterviewSignal(problems);
-    const topProblem =
-      [...problems].sort(
-        (a, b) =>
-          (b.intensity_score ?? 0) * (b.confidence ?? 0) -
-          (a.intensity_score ?? 0) * (a.confidence ?? 0)
-      )[0] ?? null;
     return {
       ...interview,
       high_signal: signal.high_signal,
       signal_label: deriveInterviewSignalLabel(interview.status, signal),
       signal_metrics: signal.metrics,
-      source: deriveSource(interview.id, granolaAssigned),
-      top_problem: topProblem
-        ? {
-            problem_text: topProblem.problem_text ?? null,
-            quote: topProblem.verbatim_quote || topProblem.supporting_quote || null,
-          }
-        : null,
     };
   });
   const decisionRows = (decisionRes.data ?? []) as Array<
@@ -211,34 +162,18 @@ export default async function ProjectPage({
     : allClusters[0] ?? null;
   const sortedFeatures = [...(((latestDecision?.feature_specs as FeatureSpec[] | null) ?? []) as FeatureSpec[])];
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 1);
-  const liveSignalsToday = interviews.filter((iv) => iv.created_at >= cutoff.toISOString()).length;
-
-  const allClustersWithUpdatedAt = allClusters as Array<ClusterWithId & { updated_at?: string }>;
-  const activityStream = buildActivityStream({
-    interviews: interviews.slice(-6).reverse(),
-    clusters: allClustersWithUpdatedAt,
-    decision: latestDecision,
-  });
-
   return (
-    <ProjectPageClient
-      project={project}
-      interviews={interviews}
-      projectId={projectId}
-      latestDecision={latestDecision}
-      topCluster={topCluster}
-      allClusters={allClusters}
-      decisionFeatures={sortedFeatures}
-      latestDecisionVerdict={latestDecisionVerdict}
-      granolaItems={granolaUnassigned}
-      granolaAssignedItems={granolaAssigned}
-      granolaCount={granolaCount}
-      granolaConnectionActive={granolaConnection?.status === "active"}
-      granolaLastSyncAt={granolaConnection?.last_sync_completed_at ?? null}
-      activityStream={activityStream}
-      liveSignalsToday={liveSignalsToday}
-    />
+    <InterviewsShell projectId={projectId} activeNav="workspace" skipEntrance>
+      <ProjectPageClient
+        project={project}
+        interviews={interviews}
+        projectId={projectId}
+        latestDecision={latestDecision}
+        topCluster={topCluster}
+        allClusters={allClusters}
+        decisionFeatures={sortedFeatures}
+        latestDecisionVerdict={latestDecisionVerdict}
+      />
+    </InterviewsShell>
   );
 }

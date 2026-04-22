@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, type FormEvent, type ReactNode } from 'react'
-import Image from "next/image";
+import Link from 'next/link'
+import { motion, useReducedMotion } from 'motion/react'
 import { SignupFormProvider } from './SignupFormContext'
+import { SignupSplitShell } from './_components/SignupSplitShell'
+import { SignupAnalyzeLoading } from '@/app/components/shell/SignupAnalyzeLoading'
+import { KroweButton } from '@/app/components/krowe/KroweButton'
+import { KroweInput } from '@/app/components/krowe/KroweInput'
 import {
   IdeaStep,
   ProductTypeStep,
@@ -27,8 +32,6 @@ import { StepKey, getProgressPercent, getPrevStepKeyForContext } from '@/lib/sig
 import { safeJson } from '@/lib/utils/parsing'
 import type { ProductType } from '@/lib/types/answers'
 import type { FinalAnswerSource } from '@/lib/types/answers'
-import SpiralPreloader from '@/app/components/SpiralPreloader'
-
 const PRELOADER_MIN_MS = 2250
 
 function sleepPreloaderMin(startTime: number) {
@@ -38,6 +41,7 @@ function sleepPreloaderMin(startTime: number) {
 }
 
 export default function SignupPage() {
+  const reduceMotion = useReducedMotion()
   const { loading, error, currentStepKey, answersByStepKey, setAnswerLocal, submitAnswer, confirmAnswer, sessionId } = useSignupSession();
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,14 +54,41 @@ export default function SignupPage() {
 
   const [overrideStepKey, setOverrideStepKey] = useState<StepKey | null>(null)
 
-  if (loading) return <SpiralPreloader className="animate-fade-in" />;
+  if (loading) {
+    return (
+      <SignupAnalyzeLoading
+        title="Setting up your session."
+        subtitle="We're preparing your onboarding workspace."
+        messages={["Connecting to your workspace…", "Loading your progress…", "Almost ready…"]}
+      />
+    );
+  }
   if (error) {
     return (
-      <div className="min-h-screen bg-background px-4 py-10">
-        <div className="mx-auto max-w-xl rounded-2xl border border-danger/40 bg-danger-soft p-5">
-          <p className="text-sm font-medium text-danger">{error}</p>
+      <SignupSplitShell
+        editorialTitle="We couldn't load onboarding."
+        editorialSubtitle="Try again from signup, or continue to your interviews."
+      >
+        <div className="rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft p-5">
+          <p className="text-sm font-medium text-danger" role="alert">
+            {error}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/signup"
+              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Retry signup
+            </Link>
+            <Link
+              href="/interviews"
+              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Go to interviews
+            </Link>
+          </div>
         </div>
-      </div>
+      </SignupSplitShell>
     );
   }
   const stepKey = (overrideStepKey ?? currentStepKey) as StepKey;
@@ -70,7 +101,15 @@ export default function SignupPage() {
     !hasSavedAnswers &&
     !overrideStepKey;
 
-  if (saving || finishing) return <SpiralPreloader className="animate-fade-in" />;
+  if (saving || finishing) {
+    return (
+      <SignupAnalyzeLoading
+        title="Finishing up."
+        subtitle="We're saving your answers and opening your interview workspace."
+        messages={["Saving your answers…", "Syncing your workspace…", "Opening interviews…"]}
+      />
+    );
+  }
 
   async function startFromWebsiteUrl(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -102,53 +141,73 @@ export default function SignupPage() {
     }
   }
 
+  if (shouldShowUrlPrompt && urlSubmitting) {
+    return (
+      <SignupAnalyzeLoading
+        title="Analyzing your website."
+        subtitle="We're reading public pages and structuring answers you can edit next."
+        messages={[
+          "Fetching your site…",
+          "Extracting product and positioning signals…",
+          "Preparing your review screen…",
+        ]}
+      />
+    );
+  }
+
   if (shouldShowUrlPrompt) {
     return (
-      <div className="min-h-screen bg-background p-6 md:p-10">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-soft">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-1.5">
-            <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
-            <span className="text-[11px] font-semibold text-foreground">Krowe onboarding</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-foreground">What is your business website?</h1>
-          <p className="mt-3 text-sm md:text-base text-muted-foreground">
-            Add your URL and we will prefill onboarding so you can skip the manual questionnaire.
+      <SignupSplitShell
+        editorialTitle="Start from your website."
+        editorialSubtitle="We'll analyze your public pages and prefill onboarding. You can edit everything before we generate your report."
+      >
+        <motion.div
+          initial={reduceMotion ? undefined : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <h2 className="serif-text text-xl font-semibold text-foreground sm:text-2xl">What&apos;s your business URL?</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Paste the main site for your company or product. We&apos;ll skip the manual questionnaire when we can.
           </p>
-          <form className="mt-6 space-y-4" onSubmit={startFromWebsiteUrl}>
-            <label className="block">
-              <span className="text-sm font-medium text-foreground">Website URL</span>
-              <input
-                type="url"
-                value={urlValue}
-                onChange={(e) => setUrlValue(e.target.value)}
-                placeholder="https://yourcompany.com"
-                className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </label>
-            {urlError ? <p className="text-sm text-danger">{urlError}</p> : null}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
+          <form className="mt-8 space-y-5" onSubmit={startFromWebsiteUrl}>
+            <KroweInput
+              type="url"
+              name="websiteUrl"
+              label="Website URL"
+              placeholder="https://yourcompany.com"
+              value={urlValue}
+              onChange={(e) => {
+                setUrlValue(e.target.value);
+                setUrlError(null);
+              }}
+              state={urlError ? "error" : "default"}
+              helperText={urlError ?? undefined}
+              required
+            />
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <KroweButton
                 type="submit"
-                disabled={urlSubmitting || !sessionId}
-                className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                variant="primary"
+                disabled={!sessionId}
+                style={{ borderRadius: "var(--radius-md)" }}
               >
-                {urlSubmitting ? "Analyzing..." : "Analyze My Business"}
-              </button>
+                Analyze my business
+              </KroweButton>
               <button
                 type="button"
                 onClick={() => {
                   setUrlPromptDismissed(true);
                   setUrlError(null);
                 }}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium text-muted-foreground transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Fill in manually instead
               </button>
             </div>
           </form>
-        </div>
-      </div>
+        </motion.div>
+      </SignupSplitShell>
     );
   }
 
@@ -170,7 +229,7 @@ export default function SignupPage() {
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(json?.error || "failed to compete signup");
+        throw new Error(json?.error || "Failed to complete signup.");
       }
 
       router.replace(`/interviews`);

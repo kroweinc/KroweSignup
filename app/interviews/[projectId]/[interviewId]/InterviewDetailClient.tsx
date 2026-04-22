@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { SparklesIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { summaryToBullets } from "@/lib/interviews/formatSummary";
+import { KROWE_EASE } from "@/lib/motion/kroweEase";
+import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
 
 interface TopQuote {
   type: string;
@@ -125,6 +129,10 @@ function extractIntervieweeName(rawText: string): string | null {
 
 type TranscriptTab = "raw" | "structured";
 
+const DETAIL_HERO_HEADLINE = "Turn raw signal into decision-ready insight.";
+const DETAIL_HERO_SUBCOPY =
+  "Read the transcript, scan structured segments, and review AI summaries side-by-side. Pain quotes and extracted problems stay tied to this interview record.";
+
 export default function InterviewDetailClient({
   interview,
   projectId,
@@ -140,6 +148,26 @@ export default function InterviewDetailClient({
   currentMethods,
 }: Props) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const heroWords = DETAIL_HERO_HEADLINE.split(" ");
+  const hw = heroWords.length;
+  const clipStart = 0.1;
+  const perWordDelay = 0.038;
+  const clipDuration = 0.24;
+  const headlineEnd = clipStart + (hw - 1) * perWordDelay + clipDuration;
+  const supportingDelay = headlineEnd + 0.04;
+  const buttonsDelay = supportingDelay + 0.1;
+  const overviewBlockDelay = buttonsDelay + 0.05;
+  const metricCount = 4;
+  const queueTitleDelay = overviewBlockDelay + 0.16 + metricCount * 0.022;
+  const transcriptUiDelay = queueTitleDelay + 0.1;
+
+  const segmentCount = structuredSegments?.length ?? 0;
+  const overviewReadiness =
+    interview.status === "structured"
+      ? Math.min(100, Math.max(28, 40 + Math.min(painCount * 8, 36)))
+      : Math.max(18, 28);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(interview.raw_text);
   const [saving, setSaving] = useState(false);
@@ -244,11 +272,203 @@ export default function InterviewDetailClient({
     day: "numeric",
   });
 
+  const scrollToTranscript = () => {
+    document.getElementById("interview-transcript-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const overviewCaption =
+    interview.status === "structured"
+      ? `${painCount} pain signal${painCount !== 1 ? "s" : ""} · ${segmentCount} segment${segmentCount !== 1 ? "s" : ""} · ${extractedProblems.length} problem${extractedProblems.length !== 1 ? "s" : ""}`
+      : "Run analysis to unlock structured segments, quotes, and extracted problems.";
+
+  const heroRails = reduceMotion ? (
+    <div className="border-b border-border/60 bg-card px-4 py-6 sm:px-6 lg:px-10">
+      <InterviewsPageWidth cap={1400}>
+        <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-3 py-1 text-xs font-semibold text-primary">
+          <SparklesIcon size={14} aria-hidden />
+          Interview record
+        </span>
+        <h2 className="krowe-display-m mt-3 max-w-3xl text-pretty text-foreground">
+          Turn raw signal into <span className="text-primary">decision-ready insight.</span>
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{DETAIL_HERO_SUBCOPY}</p>
+        <button
+          type="button"
+          onClick={scrollToTranscript}
+          className="mt-4 inline-flex rounded-full px-5 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-4)]"
+          style={{ background: "var(--gradient-primary)" }}
+        >
+          Jump to transcript
+        </button>
+      </InterviewsPageWidth>
+    </div>
+  ) : (
+    <div className="border-b border-border/60 bg-gradient-to-br from-primary-soft/90 via-background to-card">
+      <InterviewsPageWidth cap={1400} className="px-4 py-8 sm:px-6 lg:px-10">
+        <motion.span
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.03, ease: KROWE_EASE }}
+          className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-3 py-1 text-xs font-semibold text-primary shadow-[var(--shadow-1)]"
+        >
+          <SparklesIcon size={14} aria-hidden />
+          Interview record
+        </motion.span>
+        <h2 className="krowe-display-m mt-3 max-w-3xl text-pretty text-foreground">
+          {heroWords.map((word, i) => {
+            const isAccent = i === heroWords.length - 1;
+            return (
+              <motion.span
+                key={`${word}-${i}`}
+                initial={{ clipPath: "inset(0 100% 0 0)", opacity: 1 }}
+                animate={{ clipPath: "inset(0 0% 0 0)" }}
+                transition={{
+                  delay: clipStart + i * perWordDelay,
+                  duration: clipDuration,
+                  ease: KROWE_EASE,
+                }}
+                className={isAccent ? "text-primary" : undefined}
+                style={{ display: "inline-block", marginRight: "0.28em" }}
+              >
+                {word}
+              </motion.span>
+            );
+          })}
+        </h2>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: supportingDelay, duration: 0.26, ease: KROWE_EASE }}
+          className="mt-2 max-w-2xl text-sm text-muted-foreground"
+        >
+          {DETAIL_HERO_SUBCOPY}
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: buttonsDelay, duration: 0.24, ease: KROWE_EASE }}
+          className="mt-4"
+        >
+          <button
+            type="button"
+            onClick={scrollToTranscript}
+            className="inline-flex rounded-full px-5 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-4)] transition-[transform,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:-translate-y-px active:translate-y-px"
+            style={{ background: "var(--gradient-primary)" }}
+          >
+            Jump to transcript
+          </button>
+        </motion.div>
+      </InterviewsPageWidth>
+    </div>
+  );
+
+  const overviewRails = reduceMotion ? (
+    <div className="border-b border-border/60 bg-surface-subtle px-4 py-4 sm:px-6 lg:px-10">
+      <InterviewsPageWidth cap={1400} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pain signals</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{painCount}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Segments</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{segmentCount}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Problems</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{extractedProblems.length}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pipeline</p>
+          <p className="mt-1 text-sm font-semibold capitalize text-foreground">{interview.status}</p>
+        </div>
+      </InterviewsPageWidth>
+      <InterviewsPageWidth cap={1400} className="mt-3">
+        <p className="text-xs text-muted-foreground">{overviewCaption}</p>
+      </InterviewsPageWidth>
+    </div>
+  ) : (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: overviewBlockDelay, duration: 0.28, ease: KROWE_EASE }}
+      className="border-b border-border/60 bg-surface-subtle px-4 py-4 sm:px-6 lg:px-10"
+    >
+      <InterviewsPageWidth cap={1400} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            { label: "Pain signals", value: painCount },
+            { label: "Segments", value: segmentCount },
+            { label: "Problems", value: extractedProblems.length },
+            { label: "Pipeline", value: interview.status },
+          ] as const
+        ).map((card, i) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              delay: overviewBlockDelay + 0.04 + i * 0.034,
+              duration: 0.22,
+              ease: KROWE_EASE,
+            }}
+            className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{card.label}</p>
+            {typeof card.value === "number" ? (
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{card.value}</p>
+            ) : (
+              <p className="mt-1 text-sm font-semibold capitalize text-foreground">{card.value}</p>
+            )}
+          </motion.div>
+        ))}
+      </InterviewsPageWidth>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: overviewBlockDelay + 0.2, duration: 0.24, ease: KROWE_EASE }}
+        className="mt-3 w-full"
+      >
+        <InterviewsPageWidth cap={1400}>
+        <div className="mb-2 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${overviewReadiness}%` }}
+            transition={{
+              delay: overviewBlockDelay + 0.14 + metricCount * 0.034,
+              duration: 0.45,
+              ease: KROWE_EASE,
+            }}
+            style={{ background: "var(--gradient-primary)" }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">{overviewCaption}</p>
+        </InterviewsPageWidth>
+      </motion.div>
+    </motion.div>
+  );
+
+  const MainTag = reduceMotion ? "main" : motion.main;
+
   return (
     <div className="min-w-0 bg-background text-on-surface">
-        <main className="flex min-h-[calc(100vh-5rem)] flex-col">
+      {heroRails}
+      {overviewRails}
+      <MainTag
+        {...(!reduceMotion
+          ? {
+              initial: { opacity: 0, y: 12 },
+              animate: { opacity: 1, y: 0 },
+              transition: { delay: queueTitleDelay, duration: 0.28, ease: KROWE_EASE },
+            }
+          : {})}
+        className="flex min-h-[calc(100vh-5rem)] flex-col"
+      >
           <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
-            <section className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card">
+            <section
+              id="interview-transcript-panel"
+              className="flex-1 p-6 lg:p-10 overflow-y-auto no-scrollbar bg-card"
+            >
               <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
                   <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -334,22 +554,43 @@ export default function InterviewDetailClient({
                   <div className="space-y-4 text-base leading-relaxed text-on-surface-variant">
                     {interview.status === "structured" && structuredSegments && (
                       <div className="flex gap-1 mb-4 border-b border-border">
-                        {(["raw", "structured"] as TranscriptTab[]).map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => {
-                              setTranscriptTab(tab);
-                              if (tab === "raw") setSegmentFilter("all");
-                            }}
-                            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
-                              transcriptTab === tab
-                                ? "border-interview-brand text-interview-brand"
-                                : "border-transparent text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            {tab}
-                          </button>
-                        ))}
+                        {(["raw", "structured"] as TranscriptTab[]).map((tab, idx) => {
+                          const tabClass = `px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
+                            transcriptTab === tab
+                              ? "border-interview-brand text-interview-brand"
+                              : "border-transparent text-muted-foreground hover:text-foreground"
+                          }`;
+                          const onTab = () => {
+                            setTranscriptTab(tab);
+                            if (tab === "raw") setSegmentFilter("all");
+                          };
+                          if (reduceMotion) {
+                            return (
+                              <button key={tab} type="button" onClick={onTab} className={tabClass}>
+                                {tab}
+                              </button>
+                            );
+                          }
+                          return (
+                            <motion.button
+                              key={tab}
+                              type="button"
+                              onClick={onTab}
+                              className={tabClass}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{
+                                delay: transcriptUiDelay + idx * 0.05,
+                                duration: 0.2,
+                                ease: KROWE_EASE,
+                              }}
+                              whileHover={{ y: -1 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              {tab}
+                            </motion.button>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -364,7 +605,7 @@ export default function InterviewDetailClient({
                     {transcriptTab === "structured" && structuredSegments && (
                       <>
                         <div className="flex gap-1.5 flex-wrap mb-3">
-                          {(["all", "pain", "emotion", "context", "intensity"] as const).map((f) => {
+                          {(["all", "pain", "emotion", "context", "intensity"] as const).map((f, idx) => {
                             const activeStyles: Record<typeof f, string> = {
                               all: "bg-muted text-foreground",
                               pain: "bg-danger-soft text-danger",
@@ -373,16 +614,34 @@ export default function InterviewDetailClient({
                               intensity: "bg-primary-soft text-primary",
                             };
                             const isActive = segmentFilter === f;
+                            const pillClass = `px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
+                              isActive ? activeStyles[f] : "text-muted-foreground hover:text-foreground"
+                            }`;
+                            if (reduceMotion) {
+                              return (
+                                <button key={f} type="button" onClick={() => setSegmentFilter(f)} className={pillClass}>
+                                  {f}
+                                </button>
+                              );
+                            }
                             return (
-                              <button
+                              <motion.button
                                 key={f}
+                                type="button"
                                 onClick={() => setSegmentFilter(f)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
-                                  isActive ? activeStyles[f] : "text-muted-foreground hover:text-foreground"
-                                }`}
+                                className={pillClass}
+                                initial={{ opacity: 0, scale: 0.94 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{
+                                  delay: transcriptUiDelay + 0.12 + idx * 0.028,
+                                  duration: 0.18,
+                                  ease: KROWE_EASE,
+                                }}
+                                whileHover={{ scale: 1.04 }}
+                                whileTap={{ scale: 0.97 }}
                               >
                                 {f}
-                              </button>
+                              </motion.button>
                             );
                           })}
                         </div>
@@ -609,7 +868,7 @@ export default function InterviewDetailClient({
               </div>
             </section>
           </div>
-        </main>
+      </MainTag>
 
       {problemsOpen && (
         <>

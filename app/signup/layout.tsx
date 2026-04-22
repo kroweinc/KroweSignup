@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
+import { PageEntrance } from "@/app/components/motion/PageEntrance";
 
 export default async function SignupLayout({
   children,
@@ -11,5 +12,5 @@ export default async function SignupLayout({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/signin?redirectTo=/signup");
-  return <>{children}</>;
+  return <PageEntrance className="block w-full">{children}</PageEntrance>;
 }

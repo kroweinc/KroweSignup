@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import LogoutButton from "../LogoutButton";
 import InterviewsShell from "../_components/InterviewsShell";
 import { ImportsClient } from "./ImportsClient";
 
@@ -64,7 +63,7 @@ export default async function InterviewImportsPage() {
   ]);
 
   return (
-    <InterviewsShell activeNav="imports" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+    <InterviewsShell activeNav="imports" skipEntrance>
       <ImportsClient
         initialItems={(items ?? []) as InboxItem[]}
         projects={(projects ?? []) as Project[]}

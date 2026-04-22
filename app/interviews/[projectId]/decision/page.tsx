@@ -1,17 +1,11 @@
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DecisionPageClient } from "./DecisionPageClient";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
-import LogoutButton from "@/app/interviews/LogoutButton";
-import type {
-  ProblemCluster,
-  FeatureSpec,
-  UserFlow,
-  EdgeCase,
-  DecisionOutput,
-  MetaCluster,
-} from "@/lib/interviews/types";
+import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import type { ProblemCluster, FeatureSpec, DecisionOutput, MetaCluster } from "@/lib/interviews/types";
 import { computeInterviewSignal } from "@/lib/interviews/interviewSignal";
 import type { AnalysisResponse, AnalysisResult, AnalysisContext, SignalStrengthMetrics } from "@/lib/analysis/hypothesisVsReality";
 import {
@@ -149,41 +143,72 @@ export default async function DecisionPage({
     : allClusters[0] ?? null;
 
   if (!decision || decision.status !== "ready") {
+    const title =
+      decision?.status === "insufficient_data"
+        ? "Insufficient data"
+        : decision?.status === "processing"
+          ? "Analysis in progress"
+          : "No decision yet";
+    const description =
+      decision?.status === "insufficient_data"
+        ? "Add more high-signal interviews, then rerun analysis from the workspace. Krowe needs enough evidence to stand behind a verdict."
+        : "Run analysis from the workspace when you have at least three interviews. The decision report unlocks here once the pipeline finishes.";
+
     return (
-      <InterviewsShell
-        activeNav="decision"
-        projectId={projectId}
-        topbarTitle={project.name}
-        topbarActions={<LogoutButton />}
-      >
-        <div className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto px-4 py-10">
-            <Link href={`/interviews/${projectId}`} className="text-sm text-muted-foreground hover:underline">
-              ← Back to project
-            </Link>
-            <div className="mt-8 text-center py-16">
-              <p className="text-lg font-medium mb-2">
-                {decision?.status === "insufficient_data"
-                  ? "Insufficient data"
-                  : decision?.status === "processing"
-                  ? "Analysis in progress..."
-                  : "No decision yet"}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6">
-                {decision?.status === "insufficient_data"
-                  ? "Add more interviews with higher signal to generate a decision."
-                  : "Run analysis from the project page to generate a decision."}
-              </p>
-              {(decision?.status === "insufficient_data" || !decision) && (
-                <Link
-                  href={`/interviews/${projectId}`}
-                  className="inline-flex px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-                >
-                  ← Back to project to rerun
-                </Link>
-              )}
+      <InterviewsShell activeNav="decision" projectId={projectId}>
+        <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+          <InterviewsPageWidth className="space-y-8">
+            <ContentHeader
+              breadcrumbs={[
+                { label: "Interviews", href: "/interviews" },
+                { label: project.name, href: `/interviews/${projectId}` },
+                { label: "Decision" },
+              ]}
+              title={title}
+              description={description}
+              actions={
+                <>
+                  <KroweLinkButton href={`/interviews/${projectId}/add`} variant="secondary">
+                    Add interview
+                  </KroweLinkButton>
+                  <KroweLinkButton href={`/interviews/${projectId}`} variant="primary">
+                    Back to workspace
+                  </KroweLinkButton>
+                </>
+              }
+            />
+
+            <div className="noise-surface relative overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-br from-primary-soft/80 via-background to-card p-6 shadow-[var(--shadow-1)] sm:p-8">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.18]"
+                style={{
+                  backgroundImage: "var(--blueprint-grid)",
+                  backgroundSize: "var(--blueprint-grid-size)",
+                }}
+              />
+              <div className="relative z-[1] max-w-2xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Decision hold</p>
+                <p className="krowe-display-m mt-2 text-foreground">
+                  The report lives on the <span className="text-primary">other side</span> of enough signal.
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  When status flips to ready, this route becomes your verdict surface—confidence ring, build list, and
+                  hypothesis vs. reality in one scroll.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+                    Open workspace
+                  </KroweLinkButton>
+                  {(decision?.status === "insufficient_data" || !decision) && (
+                    <KroweLinkButton href={`/interviews/${projectId}/business-profile`} variant="secondary">
+                      Business profile
+                    </KroweLinkButton>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          </InterviewsPageWidth>
         </div>
       </InterviewsShell>
     );
@@ -191,8 +216,6 @@ export default async function DecisionPage({
 
   const metaClusters = (decision.meta_clusters as MetaCluster[] | null) ?? [];
   const featureSpecs = (decision.feature_specs as FeatureSpec[] | null) ?? [];
-  const userFlows = (decision.user_flows as UserFlow[] | null) ?? [];
-  const edgeCases = (decision.edge_cases as EdgeCase[] | null) ?? [];
 
   const sortedFeatures = [...featureSpecs].sort(
     (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
@@ -286,13 +309,7 @@ export default async function DecisionPage({
   }
 
   return (
-    <InterviewsShell
-      activeNav="decision"
-      projectId={projectId}
-      topbarTitle={project.name}
-      topbarActions={<LogoutButton />}
-      noPadding
-    >
+    <InterviewsShell activeNav="decision" projectId={projectId} noPadding skipEntrance>
       <DecisionPageClient
         projectId={projectId}
         project={project}
@@ -300,8 +317,6 @@ export default async function DecisionPage({
         topCluster={topCluster}
         allClusters={allClusters}
         metaClusters={metaClusters}
-        userFlows={userFlows}
-        edgeCases={edgeCases}
         byTheNumbers={byTheNumbers}
         sortedFeatures={sortedFeatures}
         confidencePct={confidencePct}

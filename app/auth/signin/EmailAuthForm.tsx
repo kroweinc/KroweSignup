@@ -1,7 +1,11 @@
 "use client";
+
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
+import { Mail } from "lucide-react";
+import { KroweButton } from "@/app/components/krowe/KroweButton";
+import { KroweInput } from "@/app/components/krowe/KroweInput";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -13,9 +17,19 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function clearErrors() {
+    setApiError(null);
+    setEmailError(null);
+    setPasswordError(null);
+    setConfirmError(null);
+  }
 
   async function getPostLoginDestination(next?: string) {
     const qp = next?.startsWith("/") ? `?next=${encodeURIComponent(next)}` : "";
@@ -33,19 +47,20 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    clearErrors();
     setMessage(null);
 
     if (!email || !password) {
-      setError("Email and password are required.");
+      if (!email) setEmailError("Required");
+      if (!password) setPasswordError("Required");
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setPasswordError("At least 8 characters");
       return;
     }
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setConfirmError("Passwords do not match");
       return;
     }
 
@@ -59,7 +74,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
         setLoading(false);
-        setError(signInError.message);
+        setApiError(signInError.message);
       } else {
         try {
           const destination = await getPostLoginDestination(redirectTo);
@@ -67,7 +82,7 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
           router.push(destination);
         } catch (destinationError: unknown) {
           setLoading(false);
-          setError(getErrorMessage(destinationError, "Unable to determine where to send you."));
+          setApiError(getErrorMessage(destinationError, "Unable to determine where to send you."));
         }
       }
     } else {
@@ -80,13 +95,13 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
       });
       setLoading(false);
       if (signUpError) {
-        setError(signUpError.message);
+        setApiError(signUpError.message);
       } else if (signUpData.session) {
         try {
           const destination = await getPostLoginDestination(redirectTo);
           router.push(destination);
         } catch (destinationError: unknown) {
-          setError(getErrorMessage(destinationError, "Unable to determine where to send you."));
+          setApiError(getErrorMessage(destinationError, "Unable to determine where to send you."));
         }
       } else {
         setMessage("Check your email to confirm your account.");
@@ -95,52 +110,95 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <input
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <KroweInput
         type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
+        name="email"
+        label="Email"
+        placeholder="you@example.com"
         autoComplete="email"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setEmailError(null);
+          setApiError(null);
+        }}
+        icon={<Mail size={18} aria-hidden />}
+        state={emailError ? "error" : "default"}
+        helperText={emailError ?? undefined}
+        required
       />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
-        autoComplete={mode === "signin" ? "current-password" : "new-password"}
-      />
-      {mode === "signup" && (
-        <input
+
+      <div className={mode === "signup" ? "" : "mb-1"}>
+        <KroweInput
           type="password"
-          placeholder="Confirm password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
-          autoComplete="new-password"
+          name="password"
+          label="Password"
+          placeholder="••••••••"
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setPasswordError(null);
+            setApiError(null);
+          }}
+          state={passwordError || apiError ? "error" : "default"}
+          helperText={passwordError ?? undefined}
+          required
         />
-      )}
-      {error && <p className="text-sm text-danger">{error}</p>}
-      {message && <p className="text-sm text-success">{message}</p>}
-      <button
+      </div>
+
+      {mode === "signup" ? (
+        <KroweInput
+          type="password"
+          name="confirmPassword"
+          label="Confirm password"
+          placeholder="••••••••"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            setConfirmError(null);
+            setApiError(null);
+          }}
+          state={confirmError ? "error" : "default"}
+          helperText={confirmError ?? undefined}
+          required
+        />
+      ) : null}
+
+      {apiError ? (
+        <p className="rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          {apiError}
+        </p>
+      ) : null}
+
+      {message ? <p className="text-sm text-success">{message}</p> : null}
+
+      <KroweButton
         type="submit"
-        disabled={loading}
-        className="w-full px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-foreground/5 transition-colors disabled:opacity-50"
+        variant="primary"
+        loading={loading}
+        className="w-full justify-center"
+        style={{ width: "100%", borderRadius: "var(--radius-md)" }}
       >
-        {loading ? "Please wait..." : mode === "signin" ? "Sign in with Email" : "Create Account"}
-      </button>
-      <p className="text-xs text-center text-muted-foreground">
+        {mode === "signin" ? "Sign in" : "Create account"}
+      </KroweButton>
+
+      <p className="mt-2 text-center text-sm text-muted-foreground">
         {mode === "signin" ? (
           <>
             Don&apos;t have an account?{" "}
             <button
               type="button"
-              onClick={() => { setMode("signup"); setError(null); setMessage(null); }}
-              className="underline hover:text-foreground"
+              className="font-semibold text-primary transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:text-[color:var(--primary-hover)]"
+              onClick={() => {
+                setMode("signup");
+                clearErrors();
+                setMessage(null);
+              }}
             >
-              Sign up
+              Start validating
             </button>
           </>
         ) : (
@@ -148,8 +206,12 @@ export default function EmailAuthForm({ redirectTo }: { redirectTo?: string }) {
             Already have an account?{" "}
             <button
               type="button"
-              onClick={() => { setMode("signin"); setError(null); setMessage(null); }}
-              className="underline hover:text-foreground"
+              className="font-semibold text-primary transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:text-[color:var(--primary-hover)]"
+              onClick={() => {
+                setMode("signin");
+                clearErrors();
+                setMessage(null);
+              }}
             >
               Sign in
             </button>

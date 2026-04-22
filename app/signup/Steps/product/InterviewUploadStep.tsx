@@ -110,7 +110,7 @@ export default function InterviewUploadStep({
   }
 
   return (
-    <SignupStepLayout progressPercent={progressPercent}>
+    <SignupStepLayout stepKey="interview_upload" progressPercent={progressPercent}>
       <div className="w-full flex flex-col items-center justify-center">
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center justify-items-center">
           <div className="space-y-6 w-full max-w-lg text-center md:text-left md:justify-self-stretch">
