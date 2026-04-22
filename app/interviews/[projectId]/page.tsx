@@ -2,7 +2,6 @@ import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import { ProjectPageClient } from "./ProjectPageClient";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
-import LogoutButton from "@/app/interviews/LogoutButton";
 import type { ProblemCluster, DecisionOutput, FeatureSpec } from "@/lib/interviews/types";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
 import {
@@ -164,12 +163,7 @@ export default async function ProjectPage({
   const sortedFeatures = [...(((latestDecision?.feature_specs as FeatureSpec[] | null) ?? []) as FeatureSpec[])];
 
   return (
-    <InterviewsShell
-      projectId={projectId}
-      activeNav="workspace"
-      topbarTitle={project.name}
-      topbarActions={<LogoutButton />}
-    >
+    <InterviewsShell projectId={projectId} activeNav="workspace" skipEntrance>
       <ProjectPageClient
         project={project}
         interviews={interviews}

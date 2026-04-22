@@ -105,7 +105,7 @@ export default function IndustryStep({
   const { submitting } = useSignupForm()
 
   return (
-    <SignupStepLayout progressPercent={progressPercent}>
+    <SignupStepLayout stepKey="industry" progressPercent={progressPercent}>
       <div className="flex-grow flex items-center justify-center p-4 md:p-8 relative overflow-hidden w-full">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-soft/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">

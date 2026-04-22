@@ -1,10 +1,9 @@
-import Link from "next/link";
+import { PlusIcon } from "lucide-react";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import { ProjectsManagerClient, type DashboardProject } from "./ProjectsManagerClient";
-import LogoutButton from "../LogoutButton";
+import type { DashboardProject } from "./ProjectsManagerClient";
 import InterviewsShell from "../_components/InterviewsShell";
-import DashboardPageHeader from "../_components/DashboardPageHeader";
-import ProjectsHeroBanner from "../_components/ProjectsHeroBanner";
+import { ProjectsPageClient } from "./ProjectsPageClient";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +28,7 @@ export default async function ProjectsPage() {
 
   if (error) {
     return (
-      <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
+      <InterviewsShell activeNav="projects">
         <div>
           <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
             Failed to load projects: {error.message}
@@ -40,68 +39,65 @@ export default async function ProjectsPage() {
   }
 
   const projects = (data ?? []) as DashboardProject[];
+  const readyProjects = projects.filter((project) => project.status === "ready").length;
+  const readinessPct =
+    projects.length === 0 ? 0 : Math.max(10, Math.round((readyProjects / projects.length) * 100));
+
+  const statCards = [
+    {
+      label: "Active projects",
+      value: projects.length,
+      hint: "Not archived",
+    },
+    {
+      label: "Total interviews",
+      value: projects.reduce((sum, project) => sum + project.interview_count, 0),
+      hint: "Across active projects",
+    },
+    {
+      label: "Ready projects",
+      value: projects.filter((project) => project.status === "ready").length,
+      hint: "Decision outputs available",
+    },
+    {
+      label: "In progress",
+      value: projects.filter(
+        (project) => project.status === "collecting" || project.status === "processing",
+      ).length,
+      hint: "Collecting or processing",
+    },
+  ];
 
   return (
-    <InterviewsShell activeNav="projects" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
-      <div className="space-y-5">
-        <DashboardPageHeader
+    <InterviewsShell activeNav="projects" skipEntrance>
+      <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+        <ProjectsPageClient
+          breadcrumbs={[
+            { label: "Interviews", href: "/interviews" },
+            { label: "Projects" },
+          ]}
           title="Projects"
-          description="Manage your interview workspaces, rename active projects, and archive completed ones."
-          actions={
+          description="Manage interview workspaces, rename active projects, and archive completed ones."
+          headerActions={
             <>
-              <Link
-                href="/interviews"
-                className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
-              >
+              <KroweLinkButton href="/interviews" variant="secondary">
                 Back to Home
-              </Link>
+              </KroweLinkButton>
               {(isAdmin || projects.length === 0) && (
-                <Link
-                  href="/interviews/new"
-                  className="rounded-full bg-gradient-to-br from-interview-brand to-interview-brand-end px-3 py-1.5 text-xs font-semibold text-primary-foreground"
-                >
+                <KroweLinkButton href="/interviews/new" variant="primary">
+                  <PlusIcon size={18} aria-hidden />
                   New Project
-                </Link>
+                </KroweLinkButton>
               )}
             </>
           }
+          statCards={statCards}
+          readinessPct={readinessPct}
+          readyProjects={readyProjects}
+          projectCount={projects.length}
+          initialProjects={projects}
+          isAdmin={isAdmin}
         />
-        <ProjectsHeroBanner />
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
-            <p className="text-xs text-muted-foreground">Active projects</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{projects.length}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Not archived</p>
-          </article>
-          <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
-            <p className="text-xs text-muted-foreground">Total interviews</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {projects.reduce((sum, project) => sum + project.interview_count, 0)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Across active projects</p>
-          </article>
-          <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
-            <p className="text-xs text-muted-foreground">Ready projects</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {projects.filter((project) => project.status === "ready").length}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Decision outputs available</p>
-          </article>
-          <article className="rounded-xl border border-border/60 bg-card px-4 py-3.5">
-            <p className="text-xs text-muted-foreground">In progress</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {
-                projects.filter(
-                  (project) => project.status === "collecting" || project.status === "processing",
-                ).length
-              }
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Collecting or processing</p>
-          </article>
-        </section>
-        <div id="projects-list">
-          <ProjectsManagerClient initialProjects={projects} isAdmin={isAdmin} />
-        </div>
       </div>
     </InterviewsShell>
   );

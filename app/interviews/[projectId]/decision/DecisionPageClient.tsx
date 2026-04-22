@@ -1,21 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { ScaleIcon, SparklesIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { supabase } from "@/lib/supabaseClient";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import { KroweButton } from "@/app/components/krowe/KroweButton";
 import { AllProblemsButton } from "./AllProblemsButton";
 import type { AnalysisResponse } from "@/lib/analysis/hypothesisVsReality";
-import type {
-  ProblemCluster,
-  FeatureSpec,
-  UserFlow,
-  EdgeCase,
-  DecisionOutput,
-  MetaCluster,
-} from "@/lib/interviews/types";
+import type { ProblemCluster, FeatureSpec, DecisionOutput, MetaCluster } from "@/lib/interviews/types";
 import "./decision-report.css";
+import { KROWE_EASE } from "@/lib/motion/kroweEase";
+import { getDashboardPageEntranceTiming } from "@/lib/motion/dashboardPageEntrance";
+import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
 
 type ClusterWithId = ProblemCluster & { id: string };
 type DecisionWithId = Omit<DecisionOutput, "project_id"> & {
@@ -43,8 +42,6 @@ type Props = {
   topCluster: ClusterWithId | null;
   allClusters: ClusterWithId[];
   metaClusters: MetaCluster[];
-  userFlows: UserFlow[];
-  edgeCases: EdgeCase[];
   byTheNumbers: ByTheNumbers;
   sortedFeatures: FeatureSpec[];
   confidencePct: number;
@@ -116,6 +113,10 @@ const PRIORITY_LABEL: Record<FeatureSpec["priority"], string> = {
   "should-have": "P1",
   "nice-to-have": "P2",
 };
+
+const DECISION_HERO_HEADLINE = "Verdict, priorities, and interview signal in one report.";
+const DECISION_HERO_SUBCOPY =
+  "Scroll the editorial layout for build order, hypothesis checks, and quotes — confidence updates live when synthesis finishes.";
 
 function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -348,8 +349,6 @@ export function DecisionPageClient({
   topCluster,
   allClusters,
   metaClusters,
-  userFlows,
-  edgeCases,
   byTheNumbers,
   sortedFeatures,
   confidencePct,
@@ -359,6 +358,7 @@ export function DecisionPageClient({
   timelineEvents,
 }: Props) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const [analysisState, setAnalysisState] = useState<"loading" | "error" | "ready">(
     persistedAnalysis ? "ready" : "loading"
   );
@@ -855,40 +855,172 @@ export function DecisionPageClient({
   const verdictColor = DECISION_COLORS[verdictLabel] ?? "#000000";
   const ringArc = `conic-gradient(#ff7a00 0 ${ringPercent}%, #f0f0f0 ${ringPercent}% 100%)`;
 
+  const heroWords = DECISION_HERO_HEADLINE.split(" ");
+  const { clipStart, perWordDelay, clipDuration, supportingDelay, buttonsDelay, overviewBlockDelay } =
+    getDashboardPageEntranceTiming(heroWords.length);
+
+  const scrollToDecisionMain = () => {
+    document.getElementById("decision-report-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const decisionHeader = (
+    <ContentHeader
+      breadcrumbs={[
+        { label: "Interviews", href: "/interviews" },
+        { label: project.name, href: `/interviews/${projectId}` },
+        { label: "Decision" },
+      ]}
+      title="Decision report"
+      description={`Verdict, build priorities, and interview-grounded rationale for ${project.name}.`}
+      actions={
+        <>
+          <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+            Workspace
+          </KroweLinkButton>
+          <KroweButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/auth/signin");
+            }}
+          >
+            Log out
+          </KroweButton>
+        </>
+      }
+    />
+  );
+
+  const verdictCallout = (
+    <div className="noise-surface relative mb-8 overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-r from-primary-soft/85 via-background to-card px-5 py-4 shadow-[var(--shadow-1)] sm:px-7">
+      <div className="relative z-[2] flex flex-wrap items-center gap-3">
+        <ScaleIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <p className="text-sm font-medium text-foreground">
+          <span className="text-primary">Verdict surface</span>
+          <span className="text-muted-foreground">
+            {" "}
+            — Editorial density below is intentional: every block maps to a Krowe design-system motif (warm neutrals,
+            one orange accent, serif only at verdict moments).
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+
   return (
-    <main className="decision-report font-sans relative min-h-screen bg-[#f9f9f9]">
-      <div className="relative z-10 mx-auto max-w-5xl px-6 py-8">
+    <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+      <InterviewsPageWidth className="relative z-10 px-4 py-6 sm:px-6 sm:py-8">
+        {reduceMotion ? (
+          decisionHeader
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.26, ease: KROWE_EASE }}
+          >
+            {decisionHeader}
+          </motion.div>
+        )}
 
-        {/* ── Header ── */}
-        <header className="mb-8 pb-6 border-b" style={{ borderColor: "#ededed" }}>
-          <div className="mb-3 flex flex-wrap items-center gap-3">
-            <Link href={`/interviews/${projectId}`} className="dr-body-text text-xs hover:underline">
-              ← Back to project
-            </Link>
-            <span className="dr-body-text text-xs opacity-40">·</span>
+        {!reduceMotion ? (
+          <div className="relative mb-8 overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-br from-primary-soft via-background to-card shadow-[var(--shadow-1)]">
             <div
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
-              style={{ border: "1px solid #ededed", background: "#f2f2f2" }}
-            >
-              <Image src="/KroweIcon.png" alt="Krowe" width={14} height={14} className="rounded-[3px]" />
-              <span className="font-label text-[9px] uppercase tracking-[0.2em]">Krowe report</span>
-            </div>
-            <span className="dr-body-text text-xs opacity-40">·</span>
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push("/auth/signin");
+              className="pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-60"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 80% 40%, color-mix(in oklch, var(--primary) 18%, transparent) 0%, transparent 72%)",
               }}
-              className="dr-body-text text-xs hover:underline"
-            >
-              Log out
-            </button>
-          </div>
-          <h1 className="font-headline text-xl font-bold">{project.name}</h1>
-          <p className="dr-body-text mt-1 text-sm">Interview decision report</p>
-        </header>
+            />
+            <div className="relative px-6 py-8 sm:px-8 sm:py-10">
+              <motion.span
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.03, ease: KROWE_EASE }}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-3 py-1 text-xs font-semibold text-primary shadow-[var(--shadow-1)] backdrop-blur-sm"
+              >
+                <SparklesIcon size={14} className="shrink-0" aria-hidden />
+                Decision intelligence
+              </motion.span>
 
+              <h2 className="krowe-display-m mt-4 max-w-3xl text-pretty text-foreground">
+                {heroWords.map((word, i) => {
+                  const isAccent = i === heroWords.length - 1;
+                  return (
+                    <motion.span
+                      key={`${word}-${i}`}
+                      initial={{ clipPath: "inset(0 100% 0 0)", opacity: 1 }}
+                      animate={{ clipPath: "inset(0 0% 0 0)" }}
+                      transition={{
+                        delay: clipStart + i * perWordDelay,
+                        duration: clipDuration,
+                        ease: KROWE_EASE,
+                      }}
+                      className={isAccent ? "text-primary" : undefined}
+                      style={{ display: "inline-block", marginRight: "0.28em" }}
+                    >
+                      {word}
+                    </motion.span>
+                  );
+                })}
+              </h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: supportingDelay, duration: 0.26, ease: KROWE_EASE }}
+                className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground"
+              >
+                {DECISION_HERO_SUBCOPY}
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: buttonsDelay, duration: 0.24, ease: KROWE_EASE }}
+                className="mt-6 flex flex-wrap items-center gap-3"
+              >
+                <button
+                  type="button"
+                  onClick={scrollToDecisionMain}
+                  className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-4)] transition-[transform,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:-translate-y-px active:translate-y-px"
+                  style={{ background: "var(--gradient-primary)" }}
+                >
+                  Jump to report
+                </button>
+                <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+                  Workspace
+                </KroweLinkButton>
+              </motion.div>
+            </div>
+          </div>
+        ) : null}
+
+        {reduceMotion ? (
+          verdictCallout
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: overviewBlockDelay, duration: 0.26, ease: KROWE_EASE }}
+          >
+            {verdictCallout}
+          </motion.div>
+        )}
+
+        <motion.div
+          id="decision-report-main"
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={
+            reduceMotion
+              ? { duration: 0.01 }
+              : { delay: overviewBlockDelay + 0.08, duration: 0.28, ease: KROWE_EASE }
+          }
+        >
+        <main className="decision-report font-sans relative rounded-[var(--radius-lg)] border border-border/60 bg-background shadow-[var(--shadow-1)]">
+          <div className="px-4 py-6 sm:px-6 sm:py-8">
         {/* ── Verdict hero card ── */}
         <section className="mb-10">
           <div
@@ -1279,7 +1411,10 @@ export function DecisionPageClient({
             Updated {formatDecisionTimestamp(decision.updated_at)}
           </span>
         </footer>
-      </div>
-    </main>
+          </div>
+        </main>
+        </motion.div>
+      </InterviewsPageWidth>
+    </div>
   );
 }

@@ -51,7 +51,7 @@ export default function InterviewCountStep({
   const sliderPercent = (value / MAX) * 100
 
   return (
-    <SignupStepLayout progressPercent={progressPercent}>
+    <SignupStepLayout stepKey="interview_count" progressPercent={progressPercent}>
       <div className="w-full flex flex-col items-center">
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           {/* Left Column */}

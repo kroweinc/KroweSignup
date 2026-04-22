@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --font-project-serif: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-project-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
   --background: #ffffff;
   --foreground: #171717;
   --primary: #f97316;
@@ -29,7 +29,7 @@
   --interview-brand-tint: #ffeae5;
   --interview-brand-glow: color-mix(in srgb, var(--interview-brand) 35%, transparent);
   /* Editorial serif — referenced by @theme --font-serif and .serif-text */
-  --font-serif-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
 
   /* Dark inset panel (e.g. Live Insights) — independent of page light theme */
   --live-insights-bg: #18181b;
@@ -47,6 +47,45 @@
   --duration-exit: 0.28s;
   --duration-preloader: 0.5s;
   --stagger-step: 85ms;
+
+  /* Krowe design system (kroweDesign) — shared tokens */
+  --primary-accent: var(--interview-brand);
+  --shadow-tint: color-mix(in oklch, var(--primary) 8%, oklch(10% 0 0));
+  --shadow-1: 0 1px 3px 0 color-mix(in srgb, var(--shadow-tint) 10%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--shadow-tint) 10%, transparent);
+  --shadow-2: 0 4px 6px -1px color-mix(in srgb, var(--shadow-tint) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--shadow-tint) 10%, transparent);
+  --shadow-3: 0 10px 15px -3px color-mix(in srgb, var(--shadow-tint) 10%, transparent),
+    0 4px 6px -4px color-mix(in srgb, var(--shadow-tint) 10%, transparent);
+  --shadow-4: 0 8px 24px -8px color-mix(in oklch, var(--primary) 40%, transparent);
+  --duration-fast: 180ms;
+  --type-display-m-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --type-display-m-line-height: 1.25;
+  --type-display-m-letter-spacing: -0.015em;
+  --type-display-m-weight: 400;
+  --blueprint-grid: linear-gradient(
+      to right,
+      color-mix(in oklch, var(--primary) 5%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px);
+  --blueprint-grid-size: 28px 28px;
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-accent) 100%
+  );
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-full: 9999px;
+  --type-body-size: 1rem;
+  --type-body-s-size: 0.875rem;
+  --type-body-l-size: 1.125rem;
+  --type-caption-size: 0.75rem;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-normal: 280ms;
+  --duration-slow: 520ms;
 }
 
 @theme inline {
@@ -85,6 +124,11 @@
   --font-mono: var(--font-geist-mono);
   --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
   --shadow-soft: 0 4px 20px -2px rgb(0 0 0 / 0.06), 0 2px 8px -2px rgb(0 0 0 / 0.04);
+  --color-primary-accent: var(--primary-accent);
+  --shadow-krowe-1: var(--shadow-1);
+  --shadow-krowe-2: var(--shadow-2);
+  --shadow-krowe-3: var(--shadow-3);
+  --shadow-krowe-4: var(--shadow-4);
 }
 
 body {
@@ -103,7 +147,7 @@ body {
 }
 
 .serif-text {
-  font-family: var(--font-serif-family);
+  font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
 }
 
 @keyframes spiral-preloader-gather {
@@ -192,6 +236,105 @@ body {
 
 .animate-fade-slide-out {
   animation: fade-slide-out var(--duration-exit) var(--ease-in-smooth) forwards;
+}
+
+@keyframes shimmer-krowe {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes orbit-krowe {
+  0% {
+    transform: rotate(0deg) translateX(9px);
+  }
+  100% {
+    transform: rotate(360deg) translateX(9px);
+  }
+}
+
+/** Blueprint canvas + display title utilities (kroweDesign). */
+.krowe-blueprint-canvas {
+  background-color: var(--background);
+  background-image: var(--blueprint-grid);
+  background-size: var(--blueprint-grid-size);
+}
+
+.krowe-display-m {
+  font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+}
+
+/** Subtle film grain — kroweDesign motif */
+.noise-surface {
+  position: relative;
+}
+.noise-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  z-index: 1;
+}
+
+@keyframes breathe-ember {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.92;
+  }
+}
+
+@keyframes ring-draw-krowe {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes draw-check-krowe {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/** Google OAuth row — shimmer on hover (see SignInButton). */
+.auth-google-shimmer-animate {
+  animation: shimmer-krowe 380ms var(--ease-out-smooth) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .noise-surface::after {
+    opacity: 0;
+  }
+  .ember-breathe circle[data-breathe] {
+    animation: none !important;
+  }
 }
 
 .step-delay-1 { animation-delay: 0ms; }

@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Building2Icon, SparklesIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import { KroweButton } from "@/app/components/krowe/KroweButton";
+import { KROWE_EASE } from "@/lib/motion/kroweEase";
+import { dashboardQueueTitleDelay, getDashboardPageEntranceTiming } from "@/lib/motion/dashboardPageEntrance";
+import { InterviewsPageWidth } from "@/app/interviews/_components/InterviewsPageWidth";
 
 type OnboardingAnswer = {
   value: unknown;
@@ -123,9 +131,9 @@ function SourceChip({ src }: { src: string | null }) {
     </span>
   );
   const map: Record<string, [string, string]> = {
-    user_edited:  ["bg-[color-mix(in_srgb,var(--primary)_14%,#fff)] text-[#a04000]", "User edit"],
-    webscraper:   ["bg-[color-mix(in_srgb,var(--tertiary)_14%,#fff)] text-tertiary", "Web scrape"],
-    ai_suggested: ["bg-[color-mix(in_srgb,var(--interview-brand)_14%,#fff)] text-interview-brand", "AI inferred"],
+    user_edited:  ["bg-primary-soft text-primary border border-primary/25", "User edit"],
+    webscraper:   ["bg-[color-mix(in_srgb,var(--tertiary)_14%,var(--background))] text-tertiary border border-tertiary/20", "Web scrape"],
+    ai_suggested: ["bg-[color-mix(in_srgb,var(--interview-brand)_14%,var(--background))] text-interview-brand border border-interview-brand/25", "AI inferred"],
     original:     ["bg-muted text-muted-foreground", "User"],
   };
   const [cls, label] = map[src] ?? ["bg-muted text-muted-foreground", src];
@@ -157,8 +165,7 @@ function CompletionRing({ pct, size = 82, stroke = 7, color = "var(--interview-b
   );
 }
 
-function FieldValue({ fkey, kind, value, isEditing, editText, onEditChange }: {
-  fkey: string;
+function FieldValue({ kind, value, isEditing, editText, onEditChange }: {
   kind: FieldKind;
   value: unknown;
   isEditing: boolean;
@@ -264,8 +271,7 @@ function FieldValue({ fkey, kind, value, isEditing, editText, onEditChange }: {
   return <span className="text-[13.5px] text-foreground">{String(value ?? "—")}</span>;
 }
 
-function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onEditChange, onSave, onCancel }: {
-  fkey: string;
+function FieldCard({ config, answer, isEditing, editText, onEditStart, onEditChange, onSave, onCancel }: {
   config: FieldConfig;
   answer: OnboardingAnswer | undefined;
   isEditing: boolean;
@@ -282,7 +288,7 @@ function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onE
 
   return (
     <div
-      className="rounded-xl bg-white relative transition-all duration-150"
+      className="group relative rounded-xl bg-card transition-all duration-150"
       style={{
         border: isEditing
           ? "1px solid var(--interview-brand)"
@@ -291,9 +297,9 @@ function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onE
           ? "0 0 0 3px color-mix(in srgb, var(--interview-brand) 15%, transparent)"
           : hovered ? "var(--shadow-soft)" : undefined,
         padding: "14px 16px",
-        background: empty ? undefined : "#fff",
+        background: empty ? undefined : "var(--card)",
         backgroundImage: empty
-          ? "repeating-linear-gradient(135deg, #fff 0 6px, color-mix(in srgb, var(--muted) 60%, #fff) 6px 7px)"
+          ? "repeating-linear-gradient(135deg, var(--background) 0 6px, color-mix(in srgb, var(--muted) 60%, var(--background)) 6px 7px)"
           : undefined,
       }}
       onMouseEnter={() => setHovered(true)}
@@ -323,7 +329,6 @@ function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onE
         </div>
       ) : (
         <FieldValue
-          fkey={fkey}
           kind={config.kind}
           value={value}
           isEditing={isEditing}
@@ -344,7 +349,7 @@ function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onE
             <button
               type="button"
               onClick={onCancel}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border bg-white text-foreground hover:brightness-95"
+              className="rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-surface-subtle"
             >
               Cancel
             </button>
@@ -361,10 +366,11 @@ function FieldCard({ fkey, config, answer, isEditing, editText, onEditStart, onE
           <button
             type="button"
             onClick={onEditStart}
-            className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground rounded-md px-1 py-0.5 transition-opacity duration-150 hover:text-interview-brand"
-            style={{ opacity: hovered || isEditing ? 1 : 0 }}
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground opacity-100 transition-opacity duration-150 hover:text-interview-brand max-sm:min-h-11 max-sm:items-center sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
           >
-            <span className="material-symbols-outlined text-[14px]">edit</span>
+            <span className="material-symbols-outlined text-[14px]" aria-hidden>
+              edit
+            </span>
             Edit
           </button>
         )}
@@ -391,7 +397,12 @@ function GroupHeader({ num, title, count, signalPct }: {
   );
 }
 
-export function BusinessProfileTab({ projectId }: { projectId: string }) {
+const HERO_HEADLINE = "Sharpen the portrait that powers synthesis.";
+const HERO_SUBCOPY =
+  "Founder and product fields flow into interview clustering, feature scoring, and decision rationale. Edit inline or refresh from your site.";
+
+export function BusinessProfileTab({ projectId, projectName }: { projectId: string; projectName: string }) {
+  const reduceMotion = useReducedMotion();
   const [data, setData] = useState<BusinessProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -472,23 +483,58 @@ export function BusinessProfileTab({ projectId }: { projectId: string }) {
     setEditText("");
   }
 
+  const shell = (children: ReactNode) => (
+    <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+      <InterviewsPageWidth className="space-y-8">{children}</InterviewsPageWidth>
+    </div>
+  );
+
   if (loading) {
-    return (
-      <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-16 mt-10">
-        <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground">
-          Loading business profile…
+    return shell(
+      <>
+        <ContentHeader
+          breadcrumbs={[
+            { label: "Interviews", href: "/interviews" },
+            { label: projectName, href: `/interviews/${projectId}` },
+            { label: "Business profile" },
+          ]}
+          title="Business profile"
+          description="Loading your onboarding snapshot…"
+          actions={
+            <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+              Workspace
+            </KroweLinkButton>
+          }
+        />
+        <div className="rounded-[var(--radius-lg)] border border-border/80 bg-card p-8 text-sm text-muted-foreground shadow-[var(--shadow-1)]">
+          <p className="font-medium text-foreground">Preparing profile canvas</p>
+          <p className="mt-2">Pulling founder and product fields from your workspace…</p>
         </div>
-      </main>
+      </>,
     );
   }
 
   if (!data) {
-    return (
-      <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-16 mt-10">
-        <div className="rounded-2xl border border-danger/40 bg-danger-soft p-6 text-sm text-danger">
+    return shell(
+      <>
+        <ContentHeader
+          breadcrumbs={[
+            { label: "Interviews", href: "/interviews" },
+            { label: projectName, href: `/interviews/${projectId}` },
+            { label: "Business profile" },
+          ]}
+          title="Business profile"
+          description="We could not load this profile."
+          actions={
+            <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+              Back to workspace
+            </KroweLinkButton>
+          }
+        />
+        <div className="rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft p-6 text-sm text-danger shadow-[var(--shadow-1)]">
           {error ?? "Unable to load business profile."}
         </div>
-      </main>
+      </>,
     );
   }
 
@@ -530,56 +576,78 @@ export function BusinessProfileTab({ projectId }: { projectId: string }) {
   const founderSig = groupSignalPct(founderKeys);
   const productSig = groupSignalPct(productKeys);
 
-  return (
-    <main className="flex-1 max-w-[1240px] mx-auto w-full px-4 md:px-5 pb-16 mt-2 space-y-0">
+  const profileHeader = (
+    <ContentHeader
+      breadcrumbs={[
+        { label: "Interviews", href: "/interviews" },
+        { label: projectName, href: `/interviews/${projectId}` },
+        { label: "Business profile" },
+      ]}
+      title="Business profile"
+      description="Founder and product snapshot from onboarding—editable inline, refreshable from your site. Richer fields sharpen interview synthesis and decision rationale."
+      actions={
+        <>
+          <KroweLinkButton href={`/interviews/${projectId}/script`} variant="secondary">
+            Interview script
+          </KroweLinkButton>
+          <KroweLinkButton href={`/interviews/${projectId}`} variant="secondary">
+            Workspace
+          </KroweLinkButton>
+        </>
+      }
+    />
+  );
 
-      {/* ── Header strip ── */}
-      <section
-        className="rounded-2xl bg-white mb-3"
-        style={{
-          border: "1px solid color-mix(in srgb, var(--border) 60%, transparent)",
-          boxShadow: "var(--shadow-soft)",
-          padding: "14px 18px",
-          display: "grid",
-          gridTemplateColumns: "1fr auto",
-          gap: 20,
-          alignItems: "center",
-        }}
-      >
+  const words = HERO_HEADLINE.split(" ");
+  const { clipStart, perWordDelay, clipDuration, supportingDelay, buttonsDelay, overviewBlockDelay } =
+    getDashboardPageEntranceTiming(words.length);
+  const founderSectionDelay = dashboardQueueTitleDelay(overviewBlockDelay, 4);
+  const productSectionDelay = founderSectionDelay + 0.1 + founderKeys.length * 0.018;
+  const snapshotDelay = overviewBlockDelay + 0.08;
+  const scrapeSectionDelay = overviewBlockDelay + 0.16;
+
+  const scrollToFounderFields = () => {
+    document.getElementById("bp-founder-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const portraitCallout = (
+    <div className="noise-surface relative overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-r from-primary-soft/90 via-background to-card px-5 py-4 shadow-[var(--shadow-1)] sm:px-7">
+      <div className="relative z-[2] flex flex-wrap items-center gap-3">
+        <Building2Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <p className="text-sm font-medium text-foreground">
+          <span className="text-primary">Portrait mode</span>
+          <span className="text-muted-foreground">
+            {" "}
+            — One orange accent per surface: interview-brand signal bars and CTAs carry the heat; everything else stays
+            warm-neutral and legible.
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+
+  const snapshotSection = (
+    <section className="grid grid-cols-1 gap-4 rounded-[var(--radius-lg)] border border-border/80 bg-card p-5 shadow-[var(--shadow-1)] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-8 sm:p-6">
         <div>
-          {/* Eyebrow */}
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] m-0 mb-1" style={{ color: "var(--interview-brand)" }}>
-            Business Profile · Onboarding Snapshot
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Onboarding snapshot</p>
+          <h2 className="krowe-display-m mt-2 max-w-xl text-pretty text-foreground">
+            A decision-ready <span className="text-primary">portrait</span> of the business.
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            {filledCount} of {totalCount} fields populated. Stronger profiles tighten cluster scoring and feature
+            prioritization downstream.
           </p>
-
-          {/* Headline */}
-          <h1 className="text-[19px] font-bold tracking-tight m-0 mb-1.5 leading-[1.15]">
-            A decision-ready{" "}
-            <span style={{ color: "var(--interview-brand)" }}>portrait</span>
-            {" "}of your business.
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[520px] m-0 mb-2.5">
-            This tab reflects your onboarding answers only. {filledCount} of {totalCount} fields detected. Rich profiles produce sharper rationale and better-prioritized build lists.
-          </p>
-
-          {/* Status chips row */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {data.onboarding.completedAt && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
-                style={{ background: "var(--success-soft)", color: "var(--success)", border: "1px solid color-mix(in srgb, var(--success) 30%, transparent)" }}
-              >
-                <span className="material-symbols-outlined text-[12px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-soft px-2.5 py-0.5 text-[10.5px] font-semibold text-success">
+                <span className="material-symbols-outlined text-[12px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  check_circle
+                </span>
                 Onboarding complete
               </span>
             )}
             {data.onboarding.mode === "webscraper" && data.onboarding.sourceUrl && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
-                style={{ background: "color-mix(in srgb, var(--interview-brand) 10%, #fff)", color: "var(--interview-brand)", border: "1px solid color-mix(in srgb, var(--interview-brand) 28%, transparent)" }}
-              >
+              <span className="inline-flex items-center gap-1 rounded-full border border-interview-brand/25 bg-[color-mix(in_srgb,var(--interview-brand)_10%,var(--background))] px-2.5 py-0.5 text-[10.5px] font-semibold text-interview-brand">
                 <span className="material-symbols-outlined text-[12px] leading-none">link</span>
                 Web-scraped source
               </span>
@@ -592,145 +660,338 @@ export function BusinessProfileTab({ projectId }: { projectId: string }) {
             )}
           </div>
         </div>
-
-        {/* Profile depth ring */}
-        <div className="flex flex-col items-center gap-0.5 shrink-0">
+        <div className="flex flex-col items-center gap-1">
           <div className="relative" style={{ width: 76, height: 76 }}>
             <CompletionRing pct={completionPct} size={76} stroke={6} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[20px] font-bold tracking-tight leading-none">{completionPct}%</span>
+              <span className="text-[20px] font-bold leading-none tracking-tight">{completionPct}%</span>
             </div>
           </div>
-          <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground leading-tight text-center">
-            Profile Depth
+          <span className="text-center text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            Profile depth
           </span>
-          <span className="text-[10.5px] text-muted-foreground font-mono">
+          <span className="font-mono text-[10.5px] text-muted-foreground">
             {filledCount}/{totalCount} signals
           </span>
         </div>
       </section>
+  );
 
-      {/* ── Website scrape hero ── */}
-      <section
-        className="rounded-2xl mb-5 relative"
-        style={{
-          padding: "14px 18px 14px",
-          background: "linear-gradient(135deg, #fdf0e8 0%, #fce8d8 100%)",
-          border: "1px solid color-mix(in srgb, var(--interview-brand) 18%, var(--border))",
-          boxShadow: "var(--shadow-soft)",
-        }}
-      >
-        {/* Last scrape badge – top right */}
+  const scrapeSection = (
+      <section className="relative overflow-hidden rounded-[var(--radius-lg)] border border-primary/25 bg-gradient-to-br from-primary-soft via-background to-card p-5 shadow-[var(--shadow-1)] sm:p-6">
         {timeAgo(data.onboarding.completedAt) && (
-          <div
-            className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-medium bg-white"
-            style={{ border: "1px solid color-mix(in srgb, var(--border) 80%, transparent)", color: "var(--muted-foreground)" }}
-          >
+          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-border/80 bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground shadow-[var(--shadow-1)]">
             <span className="material-symbols-outlined text-[12px]">schedule</span>
             Last scrape · {timeAgo(data.onboarding.completedAt)}
           </div>
         )}
 
-        <h2 className="text-[17px] font-bold tracking-tight mb-1 mt-0 pr-40">
-          Skip the form — let us{" "}
-          <span style={{ color: "var(--interview-brand)" }}>read your site.</span>
-        </h2>
-        <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[560px] mb-3">
-          Web scraping can replace manual onboarding. Running this updates your Business Profile and marks onboarding complete.
+        <h3 className="pr-36 text-base font-bold tracking-tight text-foreground sm:text-lg">
+          Skip the form — let us <span className="text-primary">read your site.</span>
+        </h3>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Web scraping can replace manual onboarding. Running this updates your business profile and marks onboarding
+          complete.
         </p>
 
-        <div className="flex gap-2 items-stretch">
-          <div
-            className="flex-1 flex items-center gap-2 px-3 rounded-xl bg-white transition-all"
-            style={{ border: "1px solid color-mix(in srgb, var(--border) 80%, transparent)", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}
-          >
-            <span className="material-symbols-outlined text-muted-foreground text-[18px]">language</span>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+          <div className="flex flex-1 items-center gap-2 rounded-xl border border-border/80 bg-card px-3 shadow-[var(--shadow-1)] transition-shadow hover:shadow-[var(--shadow-2)]">
+            <span className="material-symbols-outlined text-[18px] text-muted-foreground">language</span>
             <input
               type="url"
               value={sourceUrlInput}
               onChange={(e) => setSourceUrlInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void handleScrape()}
               placeholder="https://yourcompany.com"
-              className="flex-1 border-none outline-none py-2.5 text-sm text-foreground bg-transparent placeholder:text-muted-foreground/60"
+              className="flex-1 border-none bg-transparent py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
             />
           </div>
-          <button
+          <KroweButton
             type="button"
             onClick={() => void handleScrape()}
             disabled={scraping}
-            className="flex items-center gap-1.5 px-5 rounded-xl text-[12.5px] font-semibold text-white disabled:opacity-60 shrink-0"
-            style={{ background: "var(--interview-brand)", boxShadow: "0 6px 20px -4px rgba(230,100,50,0.35)" }}
+            loading={scraping}
+            className="shrink-0 sm:min-w-[160px]"
           >
             {scraping ? "Analyzing…" : "Analyze / Regenerate"}
-          </button>
+          </KroweButton>
         </div>
 
-        {/* Bottom row */}
-        <div className="flex flex-wrap gap-4 items-center mt-2 text-[11px] text-muted-foreground">
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
           {data.onboarding.sourceUrl && (
             <span className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: "var(--success)" }} />
-              Current source URL
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
+              Current source
               <code className="font-mono text-foreground">{data.onboarding.sourceUrl}</code>
             </span>
           )}
           {scrapeMessage && (
-            <span className={scrapeMessage.startsWith("Website analyzed") ? "text-success" : "text-danger"}>
+            <span className={scrapeMessage.startsWith("Website analyzed") ? "font-medium text-success" : "font-medium text-danger"}>
               {scrapeMessage}
             </span>
           )}
         </div>
       </section>
+  );
 
-      {error && (
-        <section className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger mb-4">
+  const fieldGroups = (
+    <>
+      {error ? (
+        <section
+          role="alert"
+          className="rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger shadow-[var(--shadow-1)]"
+        >
           {error}
         </section>
-      )}
+      ) : null}
 
-      {/* ── Founder + Problem ── */}
-      <GroupHeader num="01" title="Founder + Problem" count={founderKeys.length} signalPct={founderSig} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-        {founderKeys.map((key) => {
-          const config = FIELD_CONFIG[key]!;
-          return (
-            <FieldCard
-              key={key}
-              fkey={key}
-              config={config}
-              answer={mergedAnswers[key]}
-              isEditing={editingKey === key}
-              editText={editingKey === key ? editText : ""}
-              onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
-              onEditChange={setEditText}
-              onSave={saveEdit}
-              onCancel={cancelEdit}
-            />
-          );
-        })}
+      <div id="bp-founder-section">
+        <GroupHeader num="01" title="Founder + Problem" count={founderKeys.length} signalPct={founderSig} />
+        <div className="mt-3 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          {founderKeys.map((key) => {
+            const config = FIELD_CONFIG[key]!;
+            return (
+              <FieldCard
+                key={key}
+                config={config}
+                answer={mergedAnswers[key]}
+                isEditing={editingKey === key}
+                editText={editingKey === key ? editText : ""}
+                onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
+                onEditChange={setEditText}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── Product + Market ── */}
-      <GroupHeader num="02" title="Product + Market" count={productKeys.length} signalPct={productSig} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-        {productKeys.map((key) => {
-          const config = FIELD_CONFIG[key]!;
-          return (
-            <FieldCard
-              key={key}
-              fkey={key}
-              config={config}
-              answer={mergedAnswers[key]}
-              isEditing={editingKey === key}
-              editText={editingKey === key ? editText : ""}
-              onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
-              onEditChange={setEditText}
-              onSave={saveEdit}
-              onCancel={cancelEdit}
-            />
-          );
-        })}
+      <div>
+        <GroupHeader num="02" title="Product + Market" count={productKeys.length} signalPct={productSig} />
+        <div className="mt-3 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          {productKeys.map((key) => {
+            const config = FIELD_CONFIG[key]!;
+            return (
+              <FieldCard
+                key={key}
+                config={config}
+                answer={mergedAnswers[key]}
+                isEditing={editingKey === key}
+                editText={editingKey === key ? editText : ""}
+                onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
+                onEditChange={setEditText}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+            );
+          })}
+        </div>
       </div>
-    </main>
+    </>
+  );
+
+  if (reduceMotion) {
+    return shell(
+      <>
+        {profileHeader}
+        {portraitCallout}
+        {snapshotSection}
+        {scrapeSection}
+        {fieldGroups}
+      </>,
+    );
+  }
+
+  return shell(
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.26, ease: KROWE_EASE }}
+      >
+        {profileHeader}
+      </motion.div>
+
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-gradient-to-br from-primary-soft via-background to-card shadow-[var(--shadow-1)]">
+        <div
+          className="pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-60"
+          style={{
+            background:
+              "radial-gradient(ellipse at 80% 40%, color-mix(in oklch, var(--primary) 18%, transparent) 0%, transparent 72%)",
+          }}
+        />
+        <div className="relative px-6 py-8 sm:px-8 sm:py-10">
+          <motion.span
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.03, ease: KROWE_EASE }}
+            className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-3 py-1 text-xs font-semibold text-primary shadow-[var(--shadow-1)] backdrop-blur-sm"
+          >
+            <SparklesIcon size={14} className="shrink-0" aria-hidden />
+            Business context
+          </motion.span>
+
+          <h2 className="krowe-display-m mt-4 max-w-3xl text-pretty text-foreground">
+            {words.map((word, i) => {
+              const isAccent = i === words.length - 1;
+              return (
+                <motion.span
+                  key={`${word}-${i}`}
+                  initial={{ clipPath: "inset(0 100% 0 0)", opacity: 1 }}
+                  animate={{ clipPath: "inset(0 0% 0 0)" }}
+                  transition={{
+                    delay: clipStart + i * perWordDelay,
+                    duration: clipDuration,
+                    ease: KROWE_EASE,
+                  }}
+                  className={isAccent ? "text-primary" : undefined}
+                  style={{ display: "inline-block", marginRight: "0.28em" }}
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
+          </h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: supportingDelay, duration: 0.26, ease: KROWE_EASE }}
+            className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground"
+          >
+            {HERO_SUBCOPY}
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: buttonsDelay, duration: 0.24, ease: KROWE_EASE }}
+            className="mt-6 flex flex-wrap items-center gap-3"
+          >
+            <button
+              type="button"
+              onClick={scrollToFounderFields}
+              className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-4)] transition-[transform,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out-smooth)] hover:-translate-y-px active:translate-y-px"
+              style={{ background: "var(--gradient-primary)" }}
+            >
+              Jump to fields
+            </button>
+            <KroweLinkButton href={`/interviews/${projectId}/script`} variant="secondary">
+              Interview script
+            </KroweLinkButton>
+          </motion.div>
+        </div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: overviewBlockDelay, duration: 0.26, ease: KROWE_EASE }}
+      >
+        {portraitCallout}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: snapshotDelay, duration: 0.28, ease: KROWE_EASE }}
+      >
+        {snapshotSection}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: scrapeSectionDelay, duration: 0.28, ease: KROWE_EASE }}
+      >
+        {scrapeSection}
+      </motion.div>
+
+      {error ? (
+        <motion.section
+          role="alert"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: scrapeSectionDelay + 0.1, duration: 0.24, ease: KROWE_EASE }}
+          className="rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger shadow-[var(--shadow-1)]"
+        >
+          {error}
+        </motion.section>
+      ) : null}
+
+      <motion.div
+        id="bp-founder-section"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: founderSectionDelay, duration: 0.26, ease: KROWE_EASE }}
+      >
+        <GroupHeader num="01" title="Founder + Problem" count={founderKeys.length} signalPct={founderSig} />
+        <div className="mt-3 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          {founderKeys.map((key, index) => {
+            const config = FIELD_CONFIG[key]!;
+            return (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: founderSectionDelay + 0.05 + index * 0.022,
+                  duration: 0.22,
+                  ease: KROWE_EASE,
+                }}
+              >
+                <FieldCard
+                  config={config}
+                  answer={mergedAnswers[key]}
+                  isEditing={editingKey === key}
+                  editText={editingKey === key ? editText : ""}
+                  onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
+                  onEditChange={setEditText}
+                  onSave={saveEdit}
+                  onCancel={cancelEdit}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: productSectionDelay, duration: 0.26, ease: KROWE_EASE }}
+      >
+        <GroupHeader num="02" title="Product + Market" count={productKeys.length} signalPct={productSig} />
+        <div className="mt-3 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          {productKeys.map((key, index) => {
+            const config = FIELD_CONFIG[key]!;
+            return (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: productSectionDelay + 0.05 + index * 0.022,
+                  duration: 0.22,
+                  ease: KROWE_EASE,
+                }}
+              >
+                <FieldCard
+                  config={config}
+                  answer={mergedAnswers[key]}
+                  isEditing={editingKey === key}
+                  editText={editingKey === key ? editText : ""}
+                  onEditStart={() => startEdit(key, mergedAnswers[key]?.value)}
+                  onEditChange={setEditText}
+                  onSave={saveEdit}
+                  onCancel={cancelEdit}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+    </>,
   );
 }

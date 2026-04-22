@@ -27,6 +27,36 @@ export const SIGNUP_STEPS: StepKey[] = [
   "startup_stage",
 ]
 
+/** Short labels for progress header / tooltips (kroweDesign Onboarding-style). */
+export const SIGNUP_STEP_LABELS: Record<StepKey, string> = {
+  idea: "Business idea",
+  product_type: "Product type",
+  features: "Features",
+  problem: "Problem",
+  target_customer: "Target customer",
+  industry: "Industry",
+  competitors: "Competitors",
+  alternatives: "Alternatives",
+  pricing_model: "Pricing",
+  interview_count: "Interview count",
+  interview_upload: "Interview upload",
+  startup_stage: "Startup stage",
+}
+
+export function getSignupStepNumber(stepKey: StepKey): number {
+  const idx = SIGNUP_STEPS.indexOf(stepKey)
+  return idx === -1 ? 1 : idx + 1
+}
+
+export function getCompletedSignupSteps(current: StepKey): { step: number; name: string }[] {
+  const idx = SIGNUP_STEPS.indexOf(current)
+  if (idx <= 0) return []
+  return SIGNUP_STEPS.slice(0, idx).map((k, i) => ({
+    step: i + 1,
+    name: SIGNUP_STEP_LABELS[k],
+  }))
+}
+
 export function isValidStepKey(v: string): v is StepKey {
   return (SIGNUP_STEPS as string[]).includes(v)
 }

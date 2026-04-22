@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { AnimatedField } from "@/app/components/motion/AnimatedField";
+import { SelectFocusRing } from "@/app/components/motion/SelectFocusRing";
+import { KROWE_EASE } from "@/lib/motion/kroweEase";
 
 type ProjectOption = {
   id: string;
@@ -9,6 +13,8 @@ type ProjectOption = {
 
 type Props = {
   projects: ProjectOption[];
+  /** Stagger field entrance + focus ring on selects (parent page uses console motion). */
+  orchestrateFields?: boolean;
 };
 
 type Frequency = "every_time" | "often" | "sometimes" | "rare_once";
@@ -35,7 +41,13 @@ const RECOMMEND_OPTIONS: { value: RecommendAnswer; label: string }[] = [
   { value: "not_yet", label: "Not yet, it needs improvement first" },
 ];
 
-export default function FeedbackForm({ projects }: Props) {
+const STAG = 0.042;
+
+export default function FeedbackForm({ projects, orchestrateFields = false }: Props) {
+  const reduceMotion = useReducedMotion();
+  const motionOn = Boolean(orchestrateFields && !reduceMotion);
+  const d = (i: number) => (motionOn ? i * STAG : 0);
+
   const [category, setCategory] = useState<string>("");
   const [rating, setRating] = useState<number | null>(null);
   const [projectId, setProjectId] = useState<string>("");
@@ -136,6 +148,9 @@ export default function FeedbackForm({ projects }: Props) {
     }
   }
 
+  const selectClass =
+    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25";
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <section className="overflow-hidden rounded-xl border border-border/60 bg-card">
@@ -150,76 +165,98 @@ export default function FeedbackForm({ projects }: Props) {
         </div>
 
         <div className="grid gap-4 px-4 py-4 md:grid-cols-2">
-          <div>
-            <label htmlFor="category" className="mb-1.5 block text-sm font-medium text-foreground">
-              Category <span className="text-danger">*</span>
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              required
-            >
-              <option value="">Select category</option>
-              {CATEGORY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
+          <AnimatedField delay={d(0)}>
+            <div>
+              <label htmlFor="category" className="mb-1.5 block text-sm font-medium text-foreground">
+                Category <span className="text-danger">*</span>
+              </label>
+              <SelectFocusRing className="rounded-lg">
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className={selectClass}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </SelectFocusRing>
+            </div>
+          </AnimatedField>
 
-          <div>
-            <label htmlFor="projectId" className="mb-1.5 block text-sm font-medium text-foreground">
-              Project context <span className="text-muted-foreground">(optional)</span>
-            </label>
-            <select
-              id="projectId"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-            >
-              <option value="">No specific project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <AnimatedField delay={d(1)}>
+            <div>
+              <label htmlFor="projectId" className="mb-1.5 block text-sm font-medium text-foreground">
+                Project context <span className="text-muted-foreground">(optional)</span>
+              </label>
+              <SelectFocusRing className="rounded-lg">
+                <select
+                  id="projectId"
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="">No specific project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </SelectFocusRing>
+            </div>
+          </AnimatedField>
         </div>
       </section>
 
-      <section className="rounded-xl border border-border/60 bg-card px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <label className="text-sm font-medium text-foreground">
-            Overall experience rating <span className="text-danger">*</span>
-          </label>
-          <span className="text-xs text-muted-foreground">1 = rough, 5 = excellent</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5].map((value) => {
-            const active = rating === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setRating(value)}
-                className={`h-10 w-10 rounded-full border text-sm font-semibold transition-colors ${
-                  active
-                    ? "border-interview-brand/60 bg-interview-brand-tint text-interview-brand"
-                    : "border-border bg-background text-muted-foreground hover:text-foreground"
-                }`}
-                aria-pressed={active}
-              >
-                {value}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      <AnimatedField delay={d(2)}>
+        <section className="rounded-xl border border-border/60 bg-card px-4 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <label className="text-sm font-medium text-foreground">
+              Overall experience rating <span className="text-danger">*</span>
+            </label>
+            <span className="text-xs text-muted-foreground">1 = rough, 5 = excellent</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5].map((value) => {
+              const active = rating === value;
+              const cls = `h-10 w-10 rounded-full border text-sm font-semibold transition-colors ${
+                active
+                  ? "border-interview-brand/60 bg-interview-brand-tint text-interview-brand"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground"
+              }`;
+              if (motionOn) {
+                return (
+                  <motion.button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value)}
+                    className={cls}
+                    aria-pressed={active}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ duration: 0.18, ease: KROWE_EASE }}
+                  >
+                    {value}
+                  </motion.button>
+                );
+              }
+              return (
+                <button key={value} type="button" onClick={() => setRating(value)} className={cls} aria-pressed={active}>
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </AnimatedField>
 
+      <AnimatedField delay={d(3)}>
       <section className="rounded-xl border border-border/60 bg-card px-4 py-4">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Specific Questions
@@ -275,45 +312,51 @@ export default function FeedbackForm({ projects }: Props) {
               <label htmlFor="frequency" className="mb-1.5 block text-sm font-medium text-foreground">
                 How often does this happen? <span className="text-danger">*</span>
               </label>
-              <select
-                id="frequency"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value as Frequency)}
-                required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              >
-                <option value="">Select frequency</option>
-                {FREQUENCY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SelectFocusRing className="rounded-lg">
+                <select
+                  id="frequency"
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value as Frequency)}
+                  required
+                  className={selectClass}
+                >
+                  <option value="">Select frequency</option>
+                  {FREQUENCY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SelectFocusRing>
             </div>
 
             <div>
               <label htmlFor="wouldRecommend" className="mb-1.5 block text-sm font-medium text-foreground">
                 Would you recommend Krowe today? <span className="text-danger">*</span>
               </label>
-              <select
-                id="wouldRecommend"
-                value={wouldRecommend}
-                onChange={(e) => setWouldRecommend(e.target.value as RecommendAnswer)}
-                required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-interview-brand/25"
-              >
-                <option value="">Select answer</option>
-                {RECOMMEND_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SelectFocusRing className="rounded-lg">
+                <select
+                  id="wouldRecommend"
+                  value={wouldRecommend}
+                  onChange={(e) => setWouldRecommend(e.target.value as RecommendAnswer)}
+                  required
+                  className={selectClass}
+                >
+                  <option value="">Select answer</option>
+                  {RECOMMEND_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SelectFocusRing>
             </div>
           </div>
         </div>
       </section>
+      </AnimatedField>
 
+      <AnimatedField delay={d(4)}>
       <section className="rounded-xl border border-border/60 bg-card px-4 py-4">
         <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-foreground">
           Additional notes for the team <span className="text-danger">*</span>
@@ -334,6 +377,7 @@ export default function FeedbackForm({ projects }: Props) {
           </span>
         </div>
       </section>
+      </AnimatedField>
 
       {error && (
         <div className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">

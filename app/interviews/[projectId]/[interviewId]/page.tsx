@@ -2,7 +2,6 @@ import { createInterviewAuthClient } from "@/lib/supabaseAuth";
 import { notFound } from "next/navigation";
 import InterviewDetailClient from "./InterviewDetailClient";
 import InterviewsShell from "@/app/interviews/_components/InterviewsShell";
-import LogoutButton from "@/app/interviews/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -95,16 +94,8 @@ export default async function InterviewDetailPage({
     ? interview.alternatives_used.filter((v): v is string => typeof v === "string").slice(0, 8)
     : [];
 
-  const topbarTitle =
-    interviewNumber != null ? `Interview #${interviewNumber}` : "Interview";
-
   return (
-    <InterviewsShell
-      projectId={projectId}
-      activeNav="interview"
-      topbarTitle={topbarTitle}
-      topbarActions={<LogoutButton />}
-    >
+    <InterviewsShell projectId={projectId} activeNav="interview" skipEntrance>
       <InterviewDetailClient
         interview={interview}
         projectId={projectId}

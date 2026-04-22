@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import SpiralPreloader from "@/app/components/SpiralPreloader";
-import Image from "next/image";
+import { motion, useReducedMotion } from "motion/react";
+import { SignupSplitShell } from "@/app/signup/_components/SignupSplitShell";
+import { SignupAnalyzeLoading } from "@/app/components/shell/SignupAnalyzeLoading";
+import { KroweButton } from "@/app/components/krowe/KroweButton";
 import {
   normalizeUrlOnboardingDraft,
   type PricingModel,
@@ -55,6 +57,7 @@ function fromListValue(value: string): string[] {
 }
 
 export default function UrlOnboardingReviewClient() {
+  const reduceMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId") ?? "";
@@ -102,22 +105,33 @@ export default function UrlOnboardingReviewClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <SpiralPreloader className="animate-fade-in" />
-      </div>
+      <SignupAnalyzeLoading
+        title="Loading your extracted answers."
+        subtitle="We're pulling what we saved from your website scan."
+        messages={["Retrieving your draft…", "Validating fields…", "Preparing the editor…"]}
+        spiralSize={300}
+      />
     );
   }
 
   if (!draft) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md rounded-xl border border-border bg-card p-6">
-          <p className="text-sm text-danger">{error ?? "Unable to load review data."}</p>
-          <Link href="/signup" className="mt-4 inline-block text-sm text-primary hover:underline">
+      <SignupSplitShell
+        editorialTitle="Nothing to review yet."
+        editorialSubtitle="Your import may have expired or failed. Head back and try again."
+      >
+        <div className="rounded-[var(--radius-md)] border border-border bg-card p-6 shadow-sm">
+          <p className="text-sm text-danger" role="alert">
+            {error ?? "Unable to load review data."}
+          </p>
+          <Link
+            href="/signup"
+            className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
             Back to signup
           </Link>
         </div>
-      </div>
+      </SignupSplitShell>
     );
   }
 
@@ -151,26 +165,40 @@ export default function UrlOnboardingReviewClient() {
     }
   }
 
+  if (saving) {
+    return (
+      <SignupAnalyzeLoading
+        title="Saving and finishing."
+        subtitle="We're writing your answers and opening your interview workspace."
+        messages={["Saving your edits…", "Completing signup…", "Opening interviews…"]}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="mx-auto max-w-4xl rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-soft">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-1.5">
-          <Image src="/KroweIcon.png" alt="Krowe" width={16} height={16} className="rounded-sm" />
-          <span className="text-[11px] font-semibold text-foreground">Krowe onboarding review</span>
-        </div>
-        <h1 className="text-2xl font-semibold text-foreground">Review extracted onboarding answers</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <SignupSplitShell
+      variant="wide"
+      editorialTitle="Review what we found."
+      editorialSubtitle="Tighten any field, then continue. You're one step from your workspace."
+    >
+      <motion.div
+        initial={reduceMotion ? undefined : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <h2 className="serif-text text-xl font-semibold text-foreground sm:text-2xl">Extracted onboarding answers</h2>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           Update anything that looks off, then generate your report.
         </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <label className="md:col-span-2 block">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Idea</span>
             <textarea
               value={draft.idea}
               onChange={(e) => setDraft((s) => (s ? { ...s, idea: e.target.value } : s))}
               rows={3}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
@@ -178,8 +206,10 @@ export default function UrlOnboardingReviewClient() {
             <span className="text-sm font-medium text-foreground">Product type</span>
             <select
               value={draft.product_type}
-              onChange={(e) => setDraft((s) => (s ? { ...s, product_type: e.target.value as UrlOnboardingDraft["product_type"] } : s))}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              onChange={(e) =>
+                setDraft((s) => (s ? { ...s, product_type: e.target.value as UrlOnboardingDraft["product_type"] } : s))
+              }
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <option value="mobile">mobile</option>
               <option value="web">web</option>
@@ -193,41 +223,43 @@ export default function UrlOnboardingReviewClient() {
             <select
               value={draft.startup_stage}
               onChange={(e) => setDraft((s) => (s ? { ...s, startup_stage: e.target.value as StartupStage } : s))}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               {STAGE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>
+                  {option}
+                </option>
               ))}
             </select>
           </label>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Features (comma or new line separated)</span>
             <textarea
               value={featuresValue}
               onChange={(e) => setDraft((s) => (s ? { ...s, features: fromListValue(e.target.value) } : s))}
               rows={4}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Problem</span>
             <textarea
               value={draft.problem}
               onChange={(e) => setDraft((s) => (s ? { ...s, problem: e.target.value } : s))}
               rows={3}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Target customer</span>
             <textarea
               value={draft.target_customer}
               onChange={(e) => setDraft((s) => (s ? { ...s, target_customer: e.target.value } : s))}
               rows={3}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
@@ -237,13 +269,17 @@ export default function UrlOnboardingReviewClient() {
               value={draft.industry.industry ?? ""}
               onChange={(e) => {
                 const industry = (e.target.value || null) as IndustryId | null;
-                setDraft((s) => (s ? { ...s, industry: { industry, other: industry === "other" ? s.industry.other : "" } } : s));
+                setDraft((s) =>
+                  s ? { ...s, industry: { industry, other: industry === "other" ? s.industry.other : "" } } : s
+                );
               }}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               <option value="">Select one</option>
               {INDUSTRY_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>
+                  {option}
+                </option>
               ))}
             </select>
           </label>
@@ -253,34 +289,34 @@ export default function UrlOnboardingReviewClient() {
             <input
               value={draft.industry.other}
               onChange={(e) => setDraft((s) => (s ? { ...s, industry: { ...s.industry, other: e.target.value } } : s))}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="If industry is other"
             />
           </label>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Competitors (comma or new line separated)</span>
             <textarea
               value={competitorsValue}
               onChange={(e) => setDraft((s) => (s ? { ...s, competitors: fromListValue(e.target.value) } : s))}
               rows={3}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Alternatives (comma or new line separated)</span>
             <textarea
               value={alternativesValue}
               onChange={(e) => setDraft((s) => (s ? { ...s, alternatives: fromListValue(e.target.value) } : s))}
               rows={3}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
             />
           </label>
 
           <fieldset className="md:col-span-2">
             <legend className="text-sm font-medium text-foreground">Pricing models</legend>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
               {PRICING_OPTIONS.map((model) => {
                 const selected = draft.pricing_model.pricingModels.includes(model);
                 return (
@@ -311,7 +347,7 @@ export default function UrlOnboardingReviewClient() {
             </div>
           </fieldset>
 
-          <label className="md:col-span-2 block">
+          <label className="block md:col-span-2">
             <span className="text-sm font-medium text-foreground">Estimated price (optional)</span>
             <input
               value={draft.pricing_model.estimatedPrice ?? ""}
@@ -328,29 +364,36 @@ export default function UrlOnboardingReviewClient() {
                     : s
                 )
               }
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="$29/month"
             />
           </label>
         </div>
 
-        {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <KroweButton
             type="button"
+            variant="primary"
             onClick={onGenerateReport}
-            disabled={saving}
-            className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ borderRadius: "var(--radius-md)" }}
           >
-            {saving ? "Saving..." : "Continue"}
-          </button>
+            Continue
+          </KroweButton>
 
-          <Link href="/signup" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          <Link
+            href="/signup"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
             Edit answers manually
           </Link>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </SignupSplitShell>
   );
 }

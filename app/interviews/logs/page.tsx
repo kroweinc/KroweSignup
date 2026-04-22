@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import LogoutButton from "../LogoutButton";
 import InterviewsShell from "../_components/InterviewsShell";
-import DashboardPageHeader from "../_components/DashboardPageHeader";
+import { InterviewsPageWidth } from "../_components/InterviewsPageWidth";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
+import { LogsSurfaceClient } from "./LogsSurfaceClient";
 
 type ActivityLog = {
   id: string;
@@ -14,13 +16,6 @@ type ActivityLog = {
   created_at: string;
 };
 
-function prettyAction(action: string): string {
-  return action
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 export const dynamic = "force-dynamic";
 
 export default async function LogsPage() {
@@ -29,7 +24,45 @@ export default async function LogsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <InterviewsShell activeNav="logs">
+        <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+          <InterviewsPageWidth className="space-y-8">
+            <ContentHeader
+              breadcrumbs={[
+                { label: "Interviews", href: "/interviews" },
+                { label: "Logs" },
+              ]}
+              title="Activity logs"
+              description="Audit project-level actions and system events from your interview workspace."
+              actions={
+                <>
+                  <KroweLinkButton href="/auth/signin" variant="secondary">
+                    Sign in
+                  </KroweLinkButton>
+                  <KroweLinkButton href="/" variant="primary">
+                    Return home
+                  </KroweLinkButton>
+                </>
+              }
+            />
+            <section className="rounded-[var(--radius-lg)] border border-border/80 bg-card px-5 py-8 shadow-[var(--shadow-1)]">
+              <h2 className="text-base font-semibold text-foreground">Session required</h2>
+              <p className="mt-2 max-w-lg text-sm text-muted-foreground">
+                Sign in to load activity from your workspace. If you were signed in, your session may have expired.
+              </p>
+              <p className="mt-4 text-sm">
+                <Link href="/auth/signin" className="font-semibold text-primary underline-offset-2 hover:underline">
+                  Go to sign in
+                </Link>
+              </p>
+            </section>
+          </InterviewsPageWidth>
+        </div>
+      </InterviewsShell>
+    );
+  }
 
   const { data, error } = await supabase
     .from("dashboard_activity_logs")
@@ -41,61 +74,30 @@ export default async function LogsPage() {
   const logs = (data ?? []) as ActivityLog[];
 
   return (
-    <InterviewsShell activeNav="logs" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
-      <div className="space-y-5">
-        <DashboardPageHeader
-          title="Activity Logs"
-          description="Audit project-level actions and system events from your interview workspace."
-          actions={
-            <Link
-              href="/interviews"
-              className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
-            >
-              Back to Home
-            </Link>
-          }
-        />
+    <InterviewsShell activeNav="logs" skipEntrance>
+      <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
+        <InterviewsPageWidth className="space-y-8">
+          <ContentHeader
+            breadcrumbs={[
+              { label: "Interviews", href: "/interviews" },
+              { label: "Logs" },
+            ]}
+            title="Activity logs"
+            description="Audit project-level actions and system events from your interview workspace."
+            actions={
+              <>
+                <KroweLinkButton href="/interviews/usage?range=24h" variant="secondary">
+                  Usage
+                </KroweLinkButton>
+                <KroweLinkButton href="/interviews" variant="secondary">
+                  Back to Home
+                </KroweLinkButton>
+              </>
+            }
+          />
 
-        {error ? (
-          <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
-            Failed to load logs: {error.message}
-          </div>
-        ) : logs.length === 0 ? (
-          <div className="rounded-xl border border-border/60 bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-            No activity events yet.
-          </div>
-        ) : (
-          <section className="overflow-hidden rounded-xl border border-border/60 bg-card">
-            <div className="grid grid-cols-[1.1fr_0.8fr_0.9fr_0.9fr] gap-2 border-b border-border/60 bg-muted/35 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>Action</span>
-              <span>Entity</span>
-              <span>Project</span>
-              <span>When</span>
-            </div>
-            <div className="divide-y divide-border/60">
-              {logs.map((log) => (
-                <div
-                  key={log.id}
-                  className="grid grid-cols-[1.1fr_0.8fr_0.9fr_0.9fr] gap-2 px-4 py-3 text-sm"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{prettyAction(log.action)}</p>
-                    {log.metadata && Object.keys(log.metadata).length > 0 ? (
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {JSON.stringify(log.metadata)}
-                      </p>
-                    ) : null}
-                  </div>
-                  <span className="text-muted-foreground">{log.entity_type}</span>
-                  <span className="truncate text-muted-foreground">{log.project_id ?? "N/A"}</span>
-                  <span className="text-muted-foreground">
-                    {new Date(log.created_at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+          <LogsSurfaceClient logs={logs} errorMessage={error?.message ?? null} />
+        </InterviewsPageWidth>
       </div>
     </InterviewsShell>
   );

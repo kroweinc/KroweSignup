@@ -53,7 +53,7 @@ export default function PricingModelStep({
   }
 
   return (
-    <SignupStepLayout progressPercent={progressPercent}>
+    <SignupStepLayout stepKey="pricing_model" progressPercent={progressPercent}>
       <div className="w-full flex flex-col items-center">
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-start">
           {/* Left Column */}

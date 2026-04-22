@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { createInterviewAuthClient } from "@/lib/supabaseAuth";
-import LogoutButton from "../LogoutButton";
 import InterviewsShell from "../_components/InterviewsShell";
-import DashboardPageHeader from "../_components/DashboardPageHeader";
+import { InterviewsPageWidth } from "../_components/InterviewsPageWidth";
+import { ContentHeader } from "@/app/components/krowe/ContentHeader";
+import { KroweLinkButton } from "@/app/components/krowe/KroweLinkButton";
 import FeedbackForm from "./FeedbackForm";
+import { FeedbackPageClient } from "./FeedbackPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,46 @@ export default async function FeedbackPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <InterviewsShell activeNav="feedback" noPadding>
+        <div className="krowe-blueprint-canvas min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:px-4">
+          <InterviewsPageWidth className="space-y-8">
+            <ContentHeader
+              breadcrumbs={[
+                { label: "Interviews", href: "/interviews" },
+                { label: "Feedback" },
+              ]}
+              title="Feedback"
+              description="Share high-signal product feedback after you sign in."
+              actions={
+                <>
+                  <KroweLinkButton href="/auth/signin" variant="secondary">
+                    Sign in
+                  </KroweLinkButton>
+                  <KroweLinkButton href="/" variant="primary">
+                    Return home
+                  </KroweLinkButton>
+                </>
+              }
+            />
+            <section className="rounded-[var(--radius-lg)] border border-border/80 bg-card px-5 py-8 shadow-[var(--shadow-1)]">
+              <h2 className="text-base font-semibold text-foreground">Session required</h2>
+              <p className="mt-2 max-w-lg text-sm text-muted-foreground">
+                Sign in to submit feedback tied to your workspace. If you were signed in, your session may have
+                expired.
+              </p>
+              <p className="mt-4 text-sm">
+                <Link href="/auth/signin" className="font-semibold text-primary underline-offset-2 hover:underline">
+                  Go to sign in
+                </Link>
+              </p>
+            </section>
+          </InterviewsPageWidth>
+        </div>
+      </InterviewsShell>
+    );
+  }
 
   const { data, error } = await supabase
     .from("interview_projects")
@@ -29,52 +70,79 @@ export default async function FeedbackPage() {
 
   if (error) {
     return (
-      <InterviewsShell activeNav="feedback" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
-        <div className="rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
-          Could not load project context for feedback. Please refresh and try again.
+      <InterviewsShell activeNav="feedback" noPadding>
+        <div className="krowe-blueprint-canvas min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:px-4">
+          <InterviewsPageWidth className="space-y-8">
+            <ContentHeader
+              breadcrumbs={[
+                { label: "Interviews", href: "/interviews" },
+                { label: "Feedback" },
+              ]}
+              title="Feedback"
+              description="We could not load your project list for this form."
+              actions={
+                <KroweLinkButton href="/interviews" variant="secondary">
+                  Back to Home
+                </KroweLinkButton>
+              }
+            />
+            <div className="rounded-[var(--radius-lg)] border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger shadow-[var(--shadow-1)]">
+              Could not load project context for feedback. Please refresh and try again.
+              {error.message ? <span className="mt-1 block opacity-90">{error.message}</span> : null}
+            </div>
+          </InterviewsPageWidth>
         </div>
       </InterviewsShell>
     );
   }
 
   const projects = (data ?? []) as ProjectOption[];
+  const n = projects.length;
+
+  const statCards = [
+    { label: "Workspaces", value: n, hint: n ? "Projects you can attach context to" : "Create a project first" },
+    { label: "Categories", value: 6, hint: "Bug through Other" },
+    { label: "Form pillars", value: 4, hint: "Rating, narrative, frequency, recommend" },
+    { label: "Rating scale", value: "1–5", hint: "Overall experience" },
+  ];
+
+  const readinessPct = Math.min(100, Math.max(18, 36 + n * 10));
+  const queueCaption =
+    n > 0
+      ? `${n} workspace${n !== 1 ? "s" : ""} available for optional project context.`
+      : "Add a project to tie feedback to a specific workspace.";
+
+  const headerActions = (
+    <>
+      <KroweLinkButton href="/interviews/usage?range=24h" variant="secondary">
+        Usage
+      </KroweLinkButton>
+      <KroweLinkButton href="/interviews/logs" variant="secondary">
+        Activity logs
+      </KroweLinkButton>
+      <KroweLinkButton href="/interviews" variant="secondary">
+        Back to Home
+      </KroweLinkButton>
+    </>
+  );
 
   return (
-    <InterviewsShell activeNav="feedback" topbarTitle="Krowe Dashboard" topbarActions={<LogoutButton />}>
-      <div className="space-y-5">
-        <DashboardPageHeader
-          eyebrow="Feedback"
+    <InterviewsShell activeNav="feedback" noPadding skipEntrance>
+      <div className="krowe-blueprint-canvas min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:px-4">
+        <FeedbackPageClient
+          breadcrumbs={[
+            { label: "Interviews", href: "/interviews" },
+            { label: "Feedback" },
+          ]}
           title="Help us sharpen Krowe"
           description="Give precise, high-signal feedback. We save every submission to a dedicated feedback table and route instant notifications to the team."
-          actions={
-            <Link
-              href="/interviews"
-              className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/50"
-            >
-              Back to Home
-            </Link>
-          }
-        />
-
-        <section className="overflow-hidden rounded-xl border border-border/60 bg-[radial-gradient(circle_at_20%_0%,color-mix(in_srgb,var(--interview-brand-tint)_55%,white)_0%,transparent_44%),linear-gradient(180deg,white,white)] px-4 py-4">
-          <p className="text-xs text-muted-foreground">
-            Your response powers product decisions. We ask a few focused questions now so your later
-            requests can be triaged faster and with less back-and-forth.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-            <span className="rounded-full bg-interview-brand-tint px-2.5 py-1 font-semibold text-interview-brand">
-              Stored in `product_feedback`
-            </span>
-            <span className="rounded-full border border-border/60 bg-card px-2.5 py-1 font-semibold text-muted-foreground">
-              Retool webhook notification
-            </span>
-            <span className="rounded-full border border-border/60 bg-card px-2.5 py-1 font-semibold text-muted-foreground">
-              Team + submitter emails
-            </span>
-          </div>
-        </section>
-
-        <FeedbackForm projects={projects} />
+          headerActions={headerActions}
+          statCards={statCards}
+          readinessPct={readinessPct}
+          queueCaption={queueCaption}
+        >
+          <FeedbackForm projects={projects} orchestrateFields />
+        </FeedbackPageClient>
       </div>
     </InterviewsShell>
   );

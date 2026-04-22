@@ -24,7 +24,7 @@ export default function ProductTypeStep({
   const { submitting } = useSignupForm()
 
   return (
-    <SignupStepLayout progressPercent={progressPercent}>
+    <SignupStepLayout stepKey="product_type" progressPercent={progressPercent}>
       <div className="flex-grow flex items-center justify-center p-6 md:p-12 relative overflow-hidden w-full">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-soft/40 via-transparent to-transparent pointer-events-none -z-10 translate-x-1/3 -translate-y-1/4" />
         <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
