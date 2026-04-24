@@ -27,7 +27,7 @@ export default async function NewProjectPage() {
   }
 
   return (
-    <InterviewsShell activeNav="projects" skipEntrance>
+    <InterviewsShell activeNav="projects" skipEntrance allowWithoutProject>
       <div className="krowe-blueprint-canvas -mx-3 -mt-3 min-h-[calc(100vh-6rem)] rounded-none px-3 pb-10 pt-3 sm:-mx-4 sm:px-4">
         <NewProjectPageClient isAdmin={isAdmin} />
       </div>
